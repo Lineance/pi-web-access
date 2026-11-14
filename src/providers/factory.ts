@@ -2,13 +2,13 @@ import type { Transport } from "../transport/transport.js";
 
 import { BingProvider } from "./bing/provider.js";
 import { ExaMcpFreeProvider } from "./exa-mcp/provider.js";
-import { JsonSearchProvider, type JsonProviderSpec } from "./json/provider.js";
+import { JsonSearchProvider } from "./json/provider.js";
+import { JSON_PROVIDER_SPECS } from "./json/specs.js";
 import { LocalFetchProvider } from "./local/provider.js";
 import { findProviderMeta } from "./registry.js";
 import type { FetchProvider, ProviderCredentials, SearchProvider } from "./types.js";
 
-/** Specs for the plain JSON search APIs; the remaining two have custom transports. */
-export const JSON_PROVIDER_SPECS: Record<string, JsonProviderSpec> = {};
+export { JSON_PROVIDER_SPECS };
 
 export function createSearchProvider(
   name: string,
