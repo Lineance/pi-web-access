@@ -1,4 +1,4 @@
-# AGENTS.md — pi-web-search
+# AGENTS.md — pi-web-access
 
 ## What this is
 

@@ -1,4 +1,4 @@
-# @laboon85/pi-web-search
+# @laboon85/pi-web-access
 
 Web search and web fetch for the [pi](https://pi.dev) coding agent, built around a
 **tiered provider fallback chain**.
@@ -49,7 +49,7 @@ Defaults with no configuration at all: search uses `exa-free`, fetch uses `local
 ## Configuration
 
 One JSON file. `$PI_PKG_CFG_DIR` wins if set; otherwise
-`<agent dir>/pi-pkg-cfg/laboon-web-search/config.json`, where `<agent dir>` is
+`<agent dir>/pi-pkg-cfg/laboon-web-access/config.json`, where `<agent dir>` is
 `$PI_CODING_AGENT_DIR` or `~/.pi/agent`.
 
 ```jsonc

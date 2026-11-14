@@ -17,11 +17,11 @@ import { createTransport } from "./transport/transport.js";
 export default async function registerWebTools(pi: ExtensionAPI): Promise<void> {
   const read = readConfig();
   if (read.status === "invalid") {
-    console.error(`[pi-web-search] ${read.path}: ${read.error ?? "invalid"}; using defaults`);
+    console.error(`[pi-web-access] ${read.path}: ${read.error ?? "invalid"}; using defaults`);
   }
   if (read.unknownKeys.length > 0) {
     console.warn(
-      `[pi-web-search] ${read.path}: unknown key(s) ${read.unknownKeys.join(", ")} ignored`,
+      `[pi-web-access] ${read.path}: unknown key(s) ${read.unknownKeys.join(", ")} ignored`,
     );
   }
 
@@ -36,7 +36,7 @@ export default async function registerWebTools(pi: ExtensionAPI): Promise<void> 
   const health = NOOP_HEALTH;
 
   console.error(
-    `[pi-web-search] maxResults=${resolveMaxResults(config)} providers=${(config.providers ?? ["exa-free"]).join(",")} fetch=${(config.fetchProviders ?? ["local"]).join(",")}`,
+    `[pi-web-access] maxResults=${resolveMaxResults(config)} providers=${(config.providers ?? ["exa-free"]).join(",")} fetch=${(config.fetchProviders ?? ["local"]).join(",")}`,
   );
 
   registerWebSearchTool(pi, { config, transport: searchTransport, health });

@@ -60,7 +60,7 @@ export class ExaMcpFreeProvider implements SearchProvider {
         params: {
           protocolVersion: PROTOCOL_VERSION,
           capabilities: {},
-          clientInfo: { name: "pi-web-search", version: "0.7.0" },
+          clientInfo: { name: "pi-web-access", version: "0.7.0" },
         },
       },
       undefined,
