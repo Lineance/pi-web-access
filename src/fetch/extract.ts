@@ -6,6 +6,7 @@ const COMMENT_BLOCK = /<!--[\s\S]*?-->/g;
 const SCRIPT_BLOCK = /<script\b[\s\S]*?<\/script\s*>/gi;
 const STYLE_BLOCK = /<style\b[\s\S]*?<\/style\s*>/gi;
 const NOSCRIPT_BLOCK = /<noscript\b[\s\S]*?<\/noscript\s*>/gi;
+const TITLE_BLOCK = /<title\b[\s\S]*?<\/title\s*>/gi;
 const TITLE_TAG = /<title\b[^>]*>([\s\S]*?)<\/title\s*>/i;
 
 /** Tags that imply a line break in rendered output. */
@@ -74,6 +75,9 @@ const NAMED_ENTITIES: Readonly<Record<string, string>> = {
  * preserved. Paragraph spacing is worth fewer tokens than it costs here, and a
  * source-level blank line is indistinguishable from the gap between two block
  * tags once the markup is gone.
+ *
+ * The `<title>` element is dropped from the body; use `extractTitle` for it. Left
+ * in, it would be duplicated at the top of every page body.
  */
 export function htmlToText(html: string): string {
   if (!html) return "";
@@ -83,6 +87,7 @@ export function htmlToText(html: string): string {
     .replace(SCRIPT_BLOCK, "")
     .replace(STYLE_BLOCK, "")
     .replace(NOSCRIPT_BLOCK, "")
+    .replace(TITLE_BLOCK, "")
     .replace(BLOCK_BOUNDARY, "\n")
     .replace(ANY_TAG, "");
 

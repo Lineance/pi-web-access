@@ -15,7 +15,6 @@ export function createSearchProvider(
   transport: Transport,
   credentials: ProviderCredentials = {},
 ): SearchProvider {
-  void credentials;
   if (name === "exa-free") return new ExaMcpFreeProvider(transport);
   if (name === "bing") return new BingProvider(transport);
   const spec = JSON_PROVIDER_SPECS[name];
@@ -23,8 +22,8 @@ export function createSearchProvider(
   return new JsonSearchProvider(spec, transport, credentials.apiKey, credentials.baseUrl);
 }
 
-export function createFetchProvider(name: string): FetchProvider {
-  if (name === "local") return new LocalFetchProvider();
+export function createFetchProvider(name: string, transport: Transport): FetchProvider {
+  if (name === "local") return new LocalFetchProvider({ transport });
   throw new Error(`provider "${name}" does not support fetch`);
 }
 

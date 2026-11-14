@@ -44,10 +44,16 @@ export interface SearchProvider {
   search(query: string, maxResults: number, signal?: AbortSignal): Promise<SearchResult[]>;
 }
 
+export interface FetchRequest {
+  readonly url: string;
+  /** Return markup unchanged instead of extracted text. */
+  readonly raw: boolean;
+}
+
 export interface FetchProvider {
   readonly name: string;
   readonly label: string;
-  fetch(url: string, signal?: AbortSignal): Promise<FetchedContent>;
+  fetch(request: FetchRequest, signal?: AbortSignal): Promise<FetchedContent>;
 }
 
 export interface ProviderCredentials {

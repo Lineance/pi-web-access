@@ -10,7 +10,7 @@ import { createTransport } from "./transport/transport.js";
 /**
  * Extension entry point.
  *
- * Wiring only: read configuration, build the transport, hand both tools their
+ * Wiring only: read configuration, build the transports, hand both tools their
  * dependencies. A broken config file degrades to the built-in keyless defaults
  * instead of preventing the extension from loading.
  */
@@ -26,15 +26,19 @@ export default async function registerWebTools(pi: ExtensionAPI): Promise<void> 
   }
 
   const config = read.config;
-  const transport = await createTransport(
-    resolveProxy(config) === undefined ? {} : { proxy: resolveProxy(config) },
-  );
+  const proxy = resolveProxy(config);
+  const proxyOptions = proxy === undefined ? {} : { proxy };
+
+  // Search providers talk to their APIs; the fetch chain resolves user-supplied
+  // hosts, so only that transport refuses non-public DNS answers.
+  const searchTransport = await createTransport(proxyOptions);
+  const fetchTransport = await createTransport({ ...proxyOptions, guardDns: true });
   const health = NOOP_HEALTH;
 
   console.error(
     `[pi-web-search] maxResults=${resolveMaxResults(config)} providers=${(config.providers ?? ["exa-free"]).join(",")} fetch=${(config.fetchProviders ?? ["local"]).join(",")}`,
   );
 
-  registerWebSearchTool(pi, { config, transport, health });
-  registerWebFetchTool(pi, { config, health });
+  registerWebSearchTool(pi, { config, transport: searchTransport, health });
+  registerWebFetchTool(pi, { config, transport: fetchTransport, health });
 }

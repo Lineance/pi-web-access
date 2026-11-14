@@ -19,6 +19,10 @@ describe("htmlToText", () => {
     expect(text).not.toContain("no js");
   });
 
+  it("drops the title from the body, since it is reported separately", () => {
+    expect(htmlToText("<head><title>Doc</title></head><body><p>body</p></body>")).toBe("body");
+  });
+
   it("drops comments without inventing whitespace", () => {
     // A comment is zero-width in a browser, so the two halves join: "ab", not "a b".
     expect(htmlToText("<p>a<!-- hidden -->b</p>")).toBe("ab");

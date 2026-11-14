@@ -5,11 +5,13 @@ import type { WebConfig } from "../config/schema.js";
 import { fetchWithChain } from "../fetch/chain.js";
 import { parseAndAssertFetchUrl } from "../fetch/ssrf.js";
 import type { ChainHealth } from "../orchestrator/health.js";
+import type { Transport } from "../transport/transport.js";
 
 import { truncateForContext } from "./truncate.js";
 
 export interface FetchToolDeps {
   config: WebConfig;
+  transport: Transport;
   health?: ChainHealth;
 }
 
@@ -36,6 +38,7 @@ export function registerWebFetchTool(pi: ExtensionAPI, deps: FetchToolDeps): voi
 
       const outcome = await fetchWithChain(params.url, deps.config, {
         raw,
+        transport: deps.transport,
         ...(deps.health ? { health: deps.health } : {}),
         ...(signal ? { signal } : {}),
       });

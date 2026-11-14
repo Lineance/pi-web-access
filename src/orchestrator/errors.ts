@@ -7,7 +7,15 @@
  */
 
 export type FailureKind =
-  "quota" | "auth" | "transport" | "timeout" | "parse" | "empty" | "config" | "exhausted";
+  | "quota"
+  | "auth"
+  | "transport"
+  | "timeout"
+  | "parse"
+  | "empty"
+  | "unsupported"
+  | "config"
+  | "exhausted";
 
 /** A classified provider failure, with no stack and no vendor prose. */
 export interface Failure {

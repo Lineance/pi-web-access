@@ -7,6 +7,7 @@ import type { ChainHealth } from "../orchestrator/health.js";
 import { createFetchProvider, supportsCapability } from "../providers/factory.js";
 import { findProviderMeta } from "../providers/registry.js";
 import type { FetchedContent } from "../providers/types.js";
+import type { Transport } from "../transport/transport.js";
 
 /** One fetch call is bounded end to end, across every attempt. */
 export const FETCH_TOTAL_TIMEOUT_MS = 30_000;
@@ -22,6 +23,7 @@ export const MIN_USEFUL_TEXT_CHARS = 200;
 
 export interface FetchChainOptions {
   readonly raw: boolean;
+  readonly transport: Transport;
   readonly health?: ChainHealth;
   readonly signal?: AbortSignal;
   readonly onAttempt?: (provider: string, label: string) => void;
@@ -61,11 +63,11 @@ export async function fetchWithChain(
 ): Promise<ChainOutcome<FetchedContent>> {
   const names = buildFetchChain(config, options);
   const attempts: ChainAttempt<FetchedContent>[] = names.map((name) => {
-    const provider = createFetchProvider(name);
+    const provider = createFetchProvider(name, options.transport);
     return {
       provider: name,
       label: provider.label,
-      run: (signal) => provider.fetch(url, signal),
+      run: (signal) => provider.fetch({ url, raw: options.raw }, signal),
     };
   });
 
