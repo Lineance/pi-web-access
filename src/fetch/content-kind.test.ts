@@ -40,18 +40,29 @@ describe("classifyContentType", () => {
     expect(decision.reason).toBe("application/pdf");
   });
 
-  it("treats SVG as text, never as an image block", () => {
-    // `+xml` wins: SVG is markup, and we hand it to the model as text. It is never
-    // rendered here, so the script-carrying risk of an SVG does not apply, while
-    // reading one is genuinely useful.
+  it("treats SVG as text, matching what the read tool does for an .svg file", () => {
+    // Two constraints meet here. It cannot be an image block: pi forwards the
+    // mimeType verbatim and no target provider accepts image/svg+xml, which would
+    // reject the whole conversation rather than one turn. And refusing it loses a
+    // real capability, since inlining an icon or reading a chart spec from SVG
+    // source is a normal coding task.
     const decision = classifyContentType("image/svg+xml");
 
     expect(decision.kind).toBe("text");
     expect(decision.mimeType).toBe("image/svg+xml");
   });
 
-  it("refuses an image type pi cannot render", () => {
-    expect(classifyContentType("image/tiff").kind).toBe("unsupported");
+  it.each(["image/tiff", "image/bmp", "image/heic", "image/avif"])(
+    "refuses %s: not textual, and no provider accepts it as an image block",
+    (header) => {
+      expect(classifyContentType(header).kind).toBe("unsupported");
+    },
+  );
+
+  it("keeps SVG out of the image arm even though it is declared image/*", () => {
+    // Regression guard for the ordering: testing `image/` before the textual arm
+    // would turn SVG into an unsupported type and nobody would notice.
+    expect(classifyContentType("image/svg+xml").kind).toBe("text");
   });
 
   it("refuses a binary payload", () => {
