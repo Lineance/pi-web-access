@@ -76,9 +76,11 @@ export async function runChain<T>(
       ? AbortSignal.any([options.signal, timeoutSignal])
       : timeoutSignal;
 
+    const gate = abortGate(signal);
+
     try {
-      const value = await attempt.run(signal);
-      if (options.signal?.aborted) throw options.signal.reason ?? new Error("aborted");
+      const value = await Promise.race([attempt.run(signal), gate.promise]);
+      if (isAborted(options.signal)) throw options.signal?.reason ?? new Error("aborted");
 
       if (!options.isUnusable(value)) {
         options.health?.recordSuccess(options.capability, attempt.provider);
@@ -107,9 +109,9 @@ export async function runChain<T>(
       // Keep walking. Not recorded as a failure: an empty result is a property of
       // the query, not of the provider.
     } catch (error) {
-      if (options.signal?.aborted) throw options.signal.reason ?? error;
+      if (isAborted(options.signal)) throw options.signal?.reason ?? error;
 
-      const failure = timeoutSignal.aborted
+      const failure = isAborted(timeoutSignal)
         ? {
             provider: attempt.provider,
             kind: "timeout" as FailureKind,
@@ -119,10 +121,43 @@ export async function runChain<T>(
 
       failures.push(failure);
       options.health?.recordFailure(options.capability, attempt.provider, failure.kind);
+    } finally {
+      gate.dispose();
     }
   }
 
   throw new ChainExhaustedError([...failures, ...unusable]);
+}
+
+/**
+ * Rejection that fires when a signal aborts.
+ *
+ * The signal is handed to the attempt, but a provider that ignores it would hang
+ * the whole chain, so the attempt is raced against the abort event rather than
+ * trusted to honour it.
+ */
+function abortGate(signal: AbortSignal): { promise: Promise<never>; dispose: () => void } {
+  let remove = (): void => undefined;
+  const promise = new Promise<never>((_, reject) => {
+    const fail = (): void => reject(signal.reason ?? new Error("aborted"));
+    if (signal.aborted) {
+      fail();
+      return;
+    }
+    signal.addEventListener("abort", fail, { once: true });
+    remove = () => signal.removeEventListener("abort", fail);
+  });
+  return { promise, dispose: () => remove() };
+}
+
+/**
+ * Read the abort flag through a call.
+ *
+ * A direct `signal?.aborted` comparison is narrowed away by the compiler after an
+ * earlier check, even though `abort()` can fire during an await.
+ */
+function isAborted(signal: AbortSignal | undefined): boolean {
+  return signal?.aborted === true;
 }
 
 /**
@@ -132,7 +167,16 @@ export async function runChain<T>(
  * can do real work without starving the rest; the result never exceeds what is
  * left. With an infinite total, every attempt simply gets the per-attempt cap.
  */
-function attemptBudget<T>(remaining: number, stepsLeft: number, options: ChainOptions<T>): number {
+export interface AttemptBudgetOptions {
+  readonly perAttemptMs: number;
+  readonly minPerAttemptMs?: number;
+}
+
+export function attemptBudget(
+  remaining: number,
+  stepsLeft: number,
+  options: AttemptBudgetOptions,
+): number {
   const cap = options.perAttemptMs;
   if (!Number.isFinite(remaining)) return cap;
 
