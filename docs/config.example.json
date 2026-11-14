@@ -1,0 +1,16 @@
+{
+  "$schema-note": "Copy to <agent dir>/pi-pkg-cfg/laboon-web-search/config.json. Every field is optional.",
+  "maxResults": 10,
+  "providers": ["tavily", "exa", "firecrawl", "exa-free", "bing"],
+  "fetchProviders": ["local"],
+  "apiKeys": {
+    "tavily": "tvly-your-key",
+    "exa": "your-exa-key",
+    "firecrawl": "fc-your-key"
+  },
+  "tiers": {
+    "search": {},
+    "fetch": {}
+  },
+  "proxy": ""
+}

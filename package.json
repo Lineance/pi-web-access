@@ -1,0 +1,66 @@
+{
+  "name": "@laboon85/pi-web-search",
+  "version": "0.7.0",
+  "description": "Web search and web fetch for the pi coding agent, built around a tiered provider fallback chain.",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "web-search",
+    "web-fetch",
+    "search",
+    "fetch",
+    "fallback"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "laboon85",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "pi": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "files": [
+    "dist/**",
+    "!dist/**/*.test.js",
+    "!dist/**/*.test.d.ts",
+    "!dist/**/*.d.ts.map",
+    "!dist/**/*.js.map",
+    "!dist/**/__fixtures__/**",
+    "docs/config.example.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "node -e \"import('./dist/index.js').then((m) => { if (typeof m.default !== 'function') { console.error('dist/index.js default export is not a function'); process.exit(1); } console.log('smoke ok'); })\"",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build && npm run smoke"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=1.1.0",
+    "typebox": "*"
+  },
+  "dependencies": {
+    "undici": "8.12.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
