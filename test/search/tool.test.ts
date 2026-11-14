@@ -1,3 +1,7 @@
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ChainExhaustedError } from "../../src/orchestrator/errors.js";
@@ -22,7 +26,7 @@ interface Setup {
 
 function setup(config: WebConfig, transport: Transport): Setup {
   const { api, tools } = captureApi();
-  registerWebSearchTool(api, { config, transport });
+  registerWebSearchTool(api, { config, transport, loadConfig: () => config });
   const calls: string[] = [];
   return {
     definition: tool(tools, "web_search"),
@@ -163,6 +167,39 @@ describe("web_search execution", () => {
 
     expect(updates).toHaveLength(1);
     expect(JSON.stringify(updates[0])).toContain("Searching");
+  });
+
+  it("picks up a config change between two calls without a restart", async () => {
+    const root = mkdtempSync(join(tmpdir(), "pwa-tool-"));
+    const dir = join(root, "pi-web-access");
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "config.json");
+    vi.stubEnv("PI_PKG_CFG_DIR", root);
+    vi.stubEnv("EXA_API_KEY", "k");
+    writeFileSync(configPath, JSON.stringify({ providers: ["exa"], maxResults: 5 }), "utf8");
+
+    const { api, tools } = captureApi();
+    registerWebSearchTool(api, {
+      config: { providers: ["exa"], maxResults: 5 },
+      transport: async (url) =>
+        new URL(url).hostname === "api.exa.ai"
+          ? jsonResponse({ results: [{ title: "A", url: "https://a.com", text: "x" }] })
+          : jsonResponse({}, 500),
+    });
+    const definition = tool(tools, "web_search");
+
+    try {
+      const first = await definition.execute("id", { query: "q" }, undefined, undefined);
+      expect(first.details["backend"]).toBe("exa");
+      expect(first.details["requestedResults"]).toBe(5);
+
+      // The chain and ceiling on disk change; the tool must not reuse its snapshot.
+      writeFileSync(configPath, JSON.stringify({ providers: ["exa"], maxResults: 2 }), "utf8");
+      const second = await definition.execute("id", { query: "q" }, undefined, undefined);
+      expect(second.details["requestedResults"]).toBe(2);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("surfaces an exhausted chain as an error", async () => {

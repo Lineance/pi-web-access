@@ -84,7 +84,8 @@ One JSON file. `$PI_PKG_CFG_DIR` wins if set; otherwise
 ```
 
 Environment variables win over `apiKeys` for the keys listed above. Configuration
-is re-read on every tool call; reload pi after editing.
+is re-read on every call, so an edited chain takes effect immediately. Only
+`maxResults` is fixed at load time, because it is part of the tool schema.
 
 ## Declaring your own provider
 

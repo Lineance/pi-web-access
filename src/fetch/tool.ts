@@ -4,6 +4,7 @@ import { Type } from "typebox";
 import type { WebConfig } from "../config/schema.js";
 import { fetchWithChain } from "./chain.js";
 import { parseAndAssertFetchUrl } from "../transport/address.js";
+import { readConfigValue } from "../config/paths.js";
 import type { ChainHealth } from "../orchestrator/health.js";
 import type { ProviderCatalog } from "../providers/catalog.js";
 import type { Transport } from "../transport/transport.js";
@@ -11,7 +12,10 @@ import type { Transport } from "../transport/transport.js";
 import { truncateForContext } from "./truncate.js";
 
 export interface FetchToolDeps {
+  /** Kept for parity with the search tool; the chain uses `loadConfig`. */
   config: WebConfig;
+  /** Re-read per call. Injectable so a test can control the chain. */
+  loadConfig?: () => WebConfig;
   transport: Transport;
   catalog?: ProviderCatalog;
   health?: ChainHealth;
@@ -38,7 +42,10 @@ export function registerWebFetchTool(pi: ExtensionAPI, deps: FetchToolDeps): voi
         details: { url: params.url },
       });
 
-      const outcome = await fetchWithChain(params.url, deps.config, {
+      // Re-read rather than using the snapshot taken at registration, so an edited
+      // chain takes effect without restarting pi.
+      const config = (deps.loadConfig ?? readConfigValue)();
+      const outcome = await fetchWithChain(params.url, config, {
         raw,
         transport: deps.transport,
         ...(deps.catalog ? { catalog: deps.catalog } : {}),

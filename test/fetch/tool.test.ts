@@ -11,7 +11,7 @@ const config: WebConfig = { fetchProviders: ["local"] };
 
 function setup(transport: Transport): { definition: RegisteredTool } {
   const { api, tools } = captureApi();
-  registerWebFetchTool(api, { config, transport });
+  registerWebFetchTool(api, { config, transport, loadConfig: () => config });
   return { definition: tool(tools, "web_fetch") };
 }
 
