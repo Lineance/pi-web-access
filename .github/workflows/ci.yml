@@ -17,7 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [20, 22, 24]
+        # undici 8 and pi itself both require >= 22.19.0.
+        node: [22, 24]
     steps:
       - uses: actions/checkout@v4
 
