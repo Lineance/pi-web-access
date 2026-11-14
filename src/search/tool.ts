@@ -6,7 +6,7 @@ import type { WebConfig } from "../config/schema.js";
 import type { ChainHealth } from "../orchestrator/health.js";
 import type { ProviderCatalog } from "../providers/catalog.js";
 import type { SearchResult } from "../providers/types.js";
-import { searchWithChain } from "../search/chain.js";
+import { searchWithChain } from "./chain.js";
 import type { Transport } from "../transport/transport.js";
 
 export interface SearchToolDeps {

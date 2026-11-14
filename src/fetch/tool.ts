@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
 import type { WebConfig } from "../config/schema.js";
-import { fetchWithChain } from "../fetch/chain.js";
+import { fetchWithChain } from "./chain.js";
 import { parseAndAssertFetchUrl } from "../transport/address.js";
 import type { ChainHealth } from "../orchestrator/health.js";
 import type { ProviderCatalog } from "../providers/catalog.js";

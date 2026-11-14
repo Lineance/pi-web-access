@@ -38,19 +38,28 @@ inside pi.
 ## Architecture
 
 ```
-index.ts                wiring only
-config/                 schema, path resolution, chain/key/url/proxy resolution
-transport/              the single network exit; proxy agent; bounded body reads
+index.ts                wiring only: config, catalog, transports, registrations
+config/                 schema, path resolution, resolution of chain/key/url/proxy
+transport/              the single network exit, proxy agent, address checks, bounded reads
 orchestrator/           runChain<T>, arrangeChain (pure), ChainHealth, errors
-search/               search chain construction + result normalisation
-fetch/                  content-type classification, address checks, HTML extraction, chain
-providers/              registry metadata, factory, one module per transport style
-tools/                  the two tool definitions
+search/                 web_search entry, chain construction, result normalisation
+fetch/                  web_fetch entry, chain construction, context clipping
+status/                 /web-access-status: snapshot, formatting, command
+providers/              who does the work, split by capability
+  search/               types, registry, factory, json/ bing/ exa-mcp/ custom/
+  fetch/                types, registry, factory, local/ custom/
+  catalog.ts            lookup over both sides, built-in plus config-declared
 ```
+
+One folder per thing the user or the model can invoke (`search`, `fetch`,
+`status`), one folder for who does the work (`providers`), and the rest is
+infrastructure. A capability is expressed by which side of `providers` a module
+lives on, not by a field.
 
 `transport` is injected, never imported by a provider. `arrangeChain` is a pure
 function of (configured order, tier, cooled set). `runChain` receives attempts
-already in final order and only records outcomes.
+already in final order and only records outcomes. Each side owns its own context
+budget: `search/normalize.ts` for result fields, `fetch/truncate.ts` for one page.
 
 ## Defensive inventory
 

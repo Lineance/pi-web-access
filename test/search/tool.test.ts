@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ChainExhaustedError } from "../../src/orchestrator/errors.js";
 import type { WebConfig } from "../../src/config/schema.js";
-import { registerWebSearchTool } from "../../src/tools/web-search.js";
+import { registerWebSearchTool } from "../../src/search/tool.js";
 import type { Transport } from "../../src/transport/transport.js";
 
 import {
@@ -13,7 +13,7 @@ import {
   textOf,
   tool,
   type RegisteredTool,
-} from "./harness.js";
+} from "../harness.js";
 
 interface Setup {
   definition: RegisteredTool;

@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { ChainExhaustedError } from "../../src/orchestrator/errors.js";
 import type { WebConfig } from "../../src/config/schema.js";
-import { registerWebFetchTool } from "../../src/tools/web-fetch.js";
+import { registerWebFetchTool } from "../../src/fetch/tool.js";
 import type { Transport } from "../../src/transport/transport.js";
 
-import { captureApi, textOf, tool, type RegisteredTool } from "./harness.js";
+import { captureApi, textOf, tool, type RegisteredTool } from "../harness.js";
 
 const config: WebConfig = { fetchProviders: ["local"] };
 

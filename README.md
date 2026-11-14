@@ -86,6 +86,54 @@ One JSON file. `$PI_PKG_CFG_DIR` wins if set; otherwise
 Environment variables win over `apiKeys` for the keys listed above. Configuration
 is re-read on every tool call; reload pi after editing.
 
+## Declaring your own provider
+
+`customProviders` takes one entry per capability, so each side keeps its own rules.
+A search entry describes a JSON API; a fetch entry points at a remote reader.
+
+```jsonc
+"customProviders": {
+  "search": {
+    "my-engine": {
+      "url": "https://api.example.com/search",
+      "method": "POST",
+      "auth": { "header": "authorization", "prefix": "Bearer " },
+      "keyEnv": "MY_SEARCH_KEY",
+      "body": { "q": "{query}", "limit": "{maxResults}" },
+      "resultsPath": "data.items",
+      "fields": { "title": "name", "url": "link", "snippet": "summary" },
+      "tier": 1,
+      "maxResults": 10
+    }
+  },
+  "fetch": {
+    "my-reader": {
+      "url": "https://reader.example.com/{url}",
+      "auth": { "header": "x-api-key", "prefix": "" },
+      "keyEnv": "MY_READER_KEY",
+      "fetch": { "textPath": "data.markdown", "titlePath": "data.title" },
+      "tier": 2
+    }
+  }
+}
+```
+
+Placeholders: `{query}`, `{queryEncoded}` (for a path segment), `{maxResults}`,
+`{url}` (percent-encoded), `{baseUrl}` (taken from `baseUrls`).
+
+Rules, all enforced by name so one bad entry does not take the file down:
+
+- a name may not shadow a built-in provider, and may not appear on both sides
+- `auth` requires `keyEnv`; a custom provider reads the environment only, never
+  `apiKeys`, so a key in this file can never be sent to an endpoint that did not
+  ask for it
+- a search entry requires `resultsPath`; a POST entry requires `body`
+- `tier` is any positive integer; tiers need not be contiguous
+
+Built-in vendors use exactly this shape in code rather than living in this file:
+their field mappings follow the vendors' APIs, so a renamed field is fixed by a
+release instead of silently rotting in every copy.
+
 ## Notes
 
 - `web_fetch` refuses private, loopback and otherwise non-public addresses, and

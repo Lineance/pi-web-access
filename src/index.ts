@@ -5,8 +5,8 @@ import { readConfig, resolveMaxResults } from "./config/paths.js";
 import { resolveProxy } from "./config/resolve.js";
 import { NOOP_HEALTH } from "./orchestrator/health.js";
 import { buildCatalog } from "./providers/catalog.js";
-import { registerWebFetchTool } from "./tools/web-fetch.js";
-import { registerWebSearchTool } from "./tools/web-search.js";
+import { registerWebFetchTool } from "./fetch/tool.js";
+import { registerWebSearchTool } from "./search/tool.js";
 import { createTransport } from "./transport/transport.js";
 
 /**
