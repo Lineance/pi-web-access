@@ -102,14 +102,48 @@ is re-read on every tool call; reload pi after editing.
 ```bash
 npm install
 npm run typecheck     # tsc --noEmit
+npm run lint          # eslint
+npm run format        # prettier --write
 npm run test          # vitest, no network access
 npm run build         # tsc -p tsconfig.build.json -> dist/
 npm run smoke         # import dist/ and assert the default export
+npm run pack:check    # assert the npm tarball contents
 npm run build -- --watch   # keep dist/ fresh while using a local install
 ```
 
 The published artifact is compiled JavaScript plus `.d.ts`. `pi` loads
 `dist/index.js`, so a local install needs a build first.
+
+## Releasing
+
+Publishing uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishers):
+the workflow exchanges a GitHub OIDC token for a short-lived credential, so no npm
+token is stored in the repository, and provenance is attached automatically.
+
+Once per package, on npmjs.com:
+
+- `Publish` workflow must be registered as a GitHub Actions trusted publisher with
+  workflow filename `publish.yml`, and **`npm publish` must be explicitly
+  allowed** — new configurations default to staged publishing only.
+- A new configuration has to complete its first publish within two days, and the
+  package must already exist to be registered, so the very first release is
+  published manually:
+
+```bash
+npm login
+npm publish --access public
+```
+
+After that, releases are tagged and published by the workflow:
+
+```bash
+git tag v0.7.0
+git push origin v0.7.0
+# then publish a GitHub release for that tag
+```
+
+The workflow refuses to publish when the tag and `package.json` disagree, and
+`prepublishOnly` re-runs the whole gate before the registry sees anything.
 
 ## Acknowledgements
 

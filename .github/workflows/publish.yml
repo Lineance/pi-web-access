@@ -1,13 +1,29 @@
 name: Publish
 
+# Trusted publishing: npm exchanges this workflow's OIDC token for a short-lived
+# publish credential. No npm token exists anywhere in this repository, and
+# provenance attestations are generated automatically.
+#
+# Prerequisites, once per package:
+#   npmjs.com -> Packages -> pi-web-access -> Settings -> Trusted publishing
+#     Provider:          GitHub Actions
+#     Workflow filename: publish.yml
+#     Allowed actions:   npm publish   (not selected automatically)
+#   A new configuration must complete its first publish within 2 days or it
+#   expires, and the package therefore has to exist before it can be registered.
+
 on:
   release:
     types: [published]
   workflow_dispatch:
 
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 permissions:
   contents: read
-  # Required for npm provenance.
+  # Required for OIDC. Without it the exchange cannot happen.
   id-token: write
 
 jobs:
@@ -16,13 +32,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `cache` and no `registry-url` token: caching in a release build can
+      # serve a poisoned dependency, and an auth token would mask a broken OIDC
+      # setup by making the publish succeed for the wrong reason.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-          registry-url: https://registry.npmjs.org
+          node-version: 24
 
       - run: npm ci
+
+      # Trusted publishing needs npm 11.5.1 or newer; fail loudly instead of
+      # falling back to an unauthenticated publish.
+      - name: Require an npm that supports trusted publishing
+        run: |
+          node --input-type=module -e '
+            import { execFileSync } from "node:child_process";
+            const raw = execFileSync("npm", ["--version"], { encoding: "utf8" }).trim();
+            const [major, minor, patch] = raw.split(".").map(Number);
+            const ok = major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+            if (!ok) {
+              console.error(`npm ${raw} is too old; trusted publishing needs >= 11.5.1`);
+              process.exit(1);
+            }
+            console.log(`npm ${raw} supports trusted publishing`);
+          '
 
       # A release tagged v0.7.0 must not publish 0.8.0 from package.json.
       - name: Verify the release tag matches package.json
@@ -44,8 +77,7 @@ jobs:
       - run: npm run build
       - run: npm run pack:check
 
-      # prepublishOnly runs typecheck, lint, test, build and smoke again, so a
-      # failing suite cannot reach the registry.
-      - run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # prepublishOnly re-runs typecheck, lint, test, build and smoke, so a failing
+      # suite cannot reach the registry. No NODE_AUTH_TOKEN: npm detects the OIDC
+      # environment itself.
+      - run: npm publish --access public

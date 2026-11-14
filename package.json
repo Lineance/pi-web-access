@@ -14,6 +14,14 @@
   "type": "module",
   "license": "MIT",
   "author": "laboon85",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lineance/pi-web-access.git"
+  },
+  "homepage": "https://github.com/Lineance/pi-web-access#readme",
+  "bugs": {
+    "url": "https://github.com/Lineance/pi-web-access/issues"
+  },
   "publishConfig": {
     "access": "public"
   },
