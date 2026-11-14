@@ -1,5 +1,5 @@
 {
-  "$schema-note": "Copy to <agent dir>/pi-pkg-cfg/laboon-web-access/config.json. Every field is optional.",
+  "$schema-note": "Copy to <agent dir>/pi-pkg-cfg/pi-web-access/config.json. Every field is optional.",
   "maxResults": 10,
   "providers": ["tavily", "exa", "firecrawl", "exa-free", "bing"],
   "fetchProviders": ["local"],

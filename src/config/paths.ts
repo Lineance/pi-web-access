@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { clampMaxResults, isWebConfig, unknownConfigKeys, type WebConfig } from "./schema.js";
 
-const PKG_DIRNAME = "laboon-web-access";
+const PKG_DIRNAME = "pi-web-access";
 
 export interface ConfigReadResult {
   /** Where the config was looked for. */

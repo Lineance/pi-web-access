@@ -21,7 +21,7 @@ import {
 const tempRoot = (): string => mkdtempSync(join(tmpdir(), "pwa-cfg-"));
 
 function writeConfig(root: string, contents: unknown): void {
-  const dir = join(root, "laboon-web-access");
+  const dir = join(root, "pi-web-access");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "config.json"), contents as string, "utf8");
 }
@@ -54,7 +54,7 @@ describe("config location", () => {
 
   it("keeps its own directory so it never reads another extension", () => {
     vi.stubEnv("PI_PKG_CFG_DIR", "C:/pkg-cfg");
-    expect(configPath()).toBe(join("C:/pkg-cfg", "laboon-web-access", "config.json"));
+    expect(configPath()).toBe(join("C:/pkg-cfg", "pi-web-access", "config.json"));
   });
 });
 
