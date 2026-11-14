@@ -3,8 +3,9 @@ import { Type } from "typebox";
 
 import type { WebConfig } from "../config/schema.js";
 import { fetchWithChain } from "../fetch/chain.js";
-import { parseAndAssertFetchUrl } from "../fetch/ssrf.js";
+import { parseAndAssertFetchUrl } from "../transport/address.js";
 import type { ChainHealth } from "../orchestrator/health.js";
+import type { ProviderCatalog } from "../providers/catalog.js";
 import type { Transport } from "../transport/transport.js";
 
 import { truncateForContext } from "./truncate.js";
@@ -12,6 +13,7 @@ import { truncateForContext } from "./truncate.js";
 export interface FetchToolDeps {
   config: WebConfig;
   transport: Transport;
+  catalog?: ProviderCatalog;
   health?: ChainHealth;
 }
 
@@ -39,6 +41,7 @@ export function registerWebFetchTool(pi: ExtensionAPI, deps: FetchToolDeps): voi
       const outcome = await fetchWithChain(params.url, deps.config, {
         raw,
         transport: deps.transport,
+        ...(deps.catalog ? { catalog: deps.catalog } : {}),
         ...(deps.health ? { health: deps.health } : {}),
         ...(signal ? { signal } : {}),
       });
@@ -74,9 +77,11 @@ export function registerWebFetchTool(pi: ExtensionAPI, deps: FetchToolDeps): voi
       ]
         .filter((line): line is string => line !== undefined)
         .join("\n");
-      const footer = truncation.truncated
-        ? `\n\n[Truncated: ${truncation.shownLines} of ${truncation.totalLines} lines shown.]`
-        : "";
+      const footer = !truncation.truncated
+        ? ""
+        : truncation.clippedMidLine
+          ? "\n\n[Truncated: content cut at the byte limit.]"
+          : `\n\n[Truncated: ${truncation.shownLines} of ${truncation.totalLines} lines shown.]`;
 
       return {
         content: [{ type: "text" as const, text: `${header}\n\n${truncation.text}${footer}` }],

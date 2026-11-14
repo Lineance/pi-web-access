@@ -22,6 +22,31 @@ describe("truncateForContext", () => {
     expect(result.omittedLines).toBe(7);
   });
 
+  it("clips a single over-long line instead of returning nothing", () => {
+    // Minified HTML and one-line JSON are exactly this shape.
+    const result = truncateForContext("x".repeat(120_000), 2_000, 51_200);
+
+    expect(result.truncated).toBe(true);
+    expect(result.clippedMidLine).toBe(true);
+    expect(result.text.length).toBe(51_200);
+  });
+
+  it("clips a single long line at a character boundary", () => {
+    const result = truncateForContext("中".repeat(40_000), 2_000, 51_200);
+
+    expect(result.text).not.toContain("�");
+    expect(Buffer.byteLength(result.text, "utf8")).toBeLessThanOrEqual(51_200);
+    expect(result.text.length).toBe(17_066);
+  });
+
+  it("reports a mid-line clip separately from dropped lines", () => {
+    const result = truncateForContext("x".repeat(120_000), 2_000, 51_200);
+
+    expect(result.shownLines).toBe(1);
+    expect(result.totalLines).toBe(1);
+    expect(result.omittedLines).toBe(0);
+  });
+
   it("respects the byte cap even when the line cap is generous", () => {
     const text = Array.from({ length: 100 }, () => "x".repeat(100)).join("\n");
     const result = truncateForContext(text, 2_000, 250);
