@@ -8,6 +8,20 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettier,
   {
+    files: ["**/*.mjs", "**/*.js"],
+    languageOptions: {
+      // Node globals for the plain-JS scripts; avoids a globals dependency.
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        Buffer: "readonly",
+        URL: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+      },
+    },
+  },
+  {
     files: ["**/*.ts"],
     rules: {
       "@typescript-eslint/no-unused-vars": [

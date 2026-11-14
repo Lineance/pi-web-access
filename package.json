@@ -45,6 +45,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node -e \"import('./dist/index.js').then((m) => { if (typeof m.default !== 'function') { console.error('dist/index.js default export is not a function'); process.exit(1); } console.log('smoke ok'); })\"",
+    "pack:check": "node scripts/verify-pack.mjs",
     "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build && npm run smoke"
   },
   "peerDependencies": {
