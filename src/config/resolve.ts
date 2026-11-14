@@ -39,6 +39,10 @@ export function tierLookup(config: WebConfig, capability: Capability): (name: st
 /** Environment variable wins over the config file. */
 export function resolveApiKey(name: string, config: WebConfig): string | undefined {
   const meta = findProviderMeta(name);
+  // A provider that declares no credential never receives one, so a stray entry in
+  // the config can never be sent to an endpoint that did not ask for it.
+  if (meta !== undefined && meta.envVar === undefined) return undefined;
+
   const envVar = meta?.envVar;
   const fromEnv = envVar ? process.env[envVar]?.trim() : undefined;
   if (fromEnv) return fromEnv;
