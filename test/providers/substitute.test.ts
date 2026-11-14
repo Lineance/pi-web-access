@@ -30,6 +30,18 @@ describe("substituteString", () => {
     expect(substituteString("limit-{maxResults}", { maxResults: 3 })).toBe("limit-3");
   });
 
+  it("percent-encodes a query for a path slot", () => {
+    expect(substituteString("https://s.example.com/{queryEncoded}", { query: "a/b c" })).toBe(
+      "https://s.example.com/a%2Fb%20c",
+    );
+  });
+
+  it("uses a base url without its trailing slash", () => {
+    expect(substituteString("{baseUrl}/search", { baseUrl: "http://localhost:8080/" })).toBe(
+      "http://localhost:8080/search",
+    );
+  });
+
   it("leaves a placeholder alone when the value is unknown", () => {
     expect(substituteString("{query}", {})).toBe("{query}");
   });

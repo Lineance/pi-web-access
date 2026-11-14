@@ -1,22 +1,23 @@
 import { Value } from "typebox/value";
 
-import { substitute, substituteString } from "../../substitute.js";
-import type { SearchProviderMeta, SearchProviderSpec } from "../types.js";
 import { findSearchMeta } from "../registry.js";
+import type { SearchProviderMeta } from "../types.js";
 
 import { SearchCustomSchema } from "./schema.js";
+import { compileSearchSpec } from "./spec.js";
 
 export type SearchCompileResult =
-  { ok: true; meta: SearchProviderMeta; spec: SearchProviderSpec } | { ok: false; message: string };
+  | { ok: true; meta: SearchProviderMeta; spec: ReturnType<typeof compileSearchSpec> }
+  | { ok: false; message: string };
 
 const NAME_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 
 /**
- * Validate and compile one search provider from configuration.
+ * Validate one search provider from configuration and compile it.
  *
- * Strict on purpose: a malformed provider would send requests to the wrong place
- * and parse the wrong field, silently, so it is rejected by name and the rest of
- * the file keeps working.
+ * Strict on purpose: a malformed provider would send requests to the wrong place and
+ * parse the wrong field, silently, so it is rejected by name and the rest of the file
+ * keeps working.
  */
 export function compileSearchProvider(name: string, raw: unknown): SearchCompileResult {
   if (!NAME_PATTERN.test(name)) {
@@ -52,47 +53,16 @@ export function compileSearchProvider(name: string, raw: unknown): SearchCompile
   }
 
   const label = source.label ?? name;
-  const tier = source.tier ?? 1;
-
   const meta: SearchProviderMeta = {
     name,
     label,
     keyless: source.auth === undefined,
     ...(source.keyEnv === undefined ? {} : { envVar: source.keyEnv, envOnly: true }),
-    tier,
+    tier: source.tier ?? 1,
     ...(source.maxResults === undefined ? {} : { maxResults: source.maxResults }),
   };
 
-  const spec: SearchProviderSpec = {
-    name,
-    label,
-    ...(source.keyEnv === undefined ? {} : { envVar: source.keyEnv }),
-    url: (query, maxResults) => String(substituteString(source.url, { query, maxResults })),
-    method,
-    ...(source.headers === undefined ? {} : { headers: source.headers }),
-    ...(source.auth === undefined
-      ? {}
-      : {
-          authHeaderName: source.auth.header,
-          authPrefix: source.auth.prefix ?? "",
-        }),
-    ...(source.body === undefined
-      ? {}
-      : {
-          body: (query: string, maxResults: number) =>
-            substitute(source.body, { query, maxResults }),
-        }),
-    ...(source.query === undefined
-      ? {}
-      : {
-          queryParams: (query: string, maxResults: number) =>
-            toStringRecord(substitute(source.query, { query, maxResults })),
-        }),
-    resultsPath: source.resultsPath,
-    fields: source.fields ?? {},
-    ...(source.errorHint === undefined ? {} : { errorHint: source.errorHint }),
-  };
-
+  const spec = compileSearchSpec(name, label, source, source.keyEnv);
   return { ok: true, meta, spec };
 }
 
@@ -110,16 +80,6 @@ interface Shape {
   tier?: number;
   maxResults?: number;
   errorHint?: string;
-}
-
-function toStringRecord(value: unknown): Record<string, string> {
-  const result: Record<string, string> = {};
-  if (value !== null && typeof value === "object") {
-    for (const [key, inner] of Object.entries(value as Record<string, unknown>)) {
-      result[key] = String(inner);
-    }
-  }
-  return result;
 }
 
 function describeFirstError(raw: unknown): string {
