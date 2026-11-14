@@ -73,13 +73,13 @@ describe("readConfig", () => {
   it("parses a valid file", () => {
     const root = tempRoot();
     vi.stubEnv("PI_PKG_CFG_DIR", root);
-    writeConfig(root, JSON.stringify({ maxResults: 4, providers: ["tavily"] }));
+    writeConfig(root, JSON.stringify({ maxResults: 4, searchProviders: ["tavily"] }));
 
     const read = readConfig();
 
     expect(read.status).toBe("valid");
     expect(read.config.maxResults).toBe(4);
-    expect(read.config.providers).toEqual(["tavily"]);
+    expect(read.config.searchProviders).toEqual(["tavily"]);
   });
 
   it("degrades to defaults on malformed JSON", () => {
@@ -97,7 +97,7 @@ describe("readConfig", () => {
   it("degrades to defaults when the shape is wrong", () => {
     const root = tempRoot();
     vi.stubEnv("PI_PKG_CFG_DIR", root);
-    writeConfig(root, JSON.stringify({ providers: "tavily" }));
+    writeConfig(root, JSON.stringify({ searchProviders: "tavily" }));
 
     const read = readConfig();
 

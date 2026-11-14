@@ -12,7 +12,8 @@ export const DEFAULT_FETCH_CHAIN: readonly string[] = ["local"];
  * when nothing is configured.
  */
 export function getChain(config: WebConfig, capability: Capability): string[] {
-  const configured = (capability === "search" ? config.providers : config.fetchProviders) ?? [];
+  const configured =
+    (capability === "search" ? config.searchProviders : config.fetchProviders) ?? [];
   const cleaned = dedupe(configured);
   if (cleaned.length > 0) return cleaned;
   return [...(capability === "search" ? DEFAULT_SEARCH_CHAIN : DEFAULT_FETCH_CHAIN)];

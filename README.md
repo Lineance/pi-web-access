@@ -59,7 +59,7 @@ One JSON file. `$PI_PKG_CFG_DIR` wins if set; otherwise
   "maxResults": 10,
 
   // Search chain, in preference order. Grouped by tier internally.
-  "providers": ["tavily", "exa", "firecrawl", "exa-free", "bing"],
+  "searchProviders": ["tavily", "exa", "firecrawl", "exa-free", "bing"],
 
   // Fetch chain, in preference order.
   "fetchProviders": ["local"],

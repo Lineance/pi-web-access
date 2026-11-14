@@ -53,7 +53,7 @@ afterEach(() => {
 describe("web_search registration", () => {
   it("registers the expected name and a terse description", () => {
     vi.stubEnv("EXA_API_KEY", "k");
-    const { definition } = setup({ maxResults: 5, providers: ["exa"] }, async () =>
+    const { definition } = setup({ maxResults: 5, searchProviders: ["exa"] }, async () =>
       jsonResponse({ results: [] }),
     );
 
@@ -64,7 +64,7 @@ describe("web_search registration", () => {
 
   it("derives the schema default and ceiling from maxResults", () => {
     vi.stubEnv("EXA_API_KEY", "k");
-    const { definition } = setup({ maxResults: 3, providers: ["exa"] }, async () =>
+    const { definition } = setup({ maxResults: 3, searchProviders: ["exa"] }, async () =>
       jsonResponse({ results: [] }),
     );
 
@@ -75,7 +75,7 @@ describe("web_search registration", () => {
 
   it("clamps an out-of-range value configured above the absolute ceiling", () => {
     vi.stubEnv("EXA_API_KEY", "k");
-    const { definition } = setup({ maxResults: 999, providers: ["exa"] }, async () =>
+    const { definition } = setup({ maxResults: 999, searchProviders: ["exa"] }, async () =>
       jsonResponse({ results: [] }),
     );
 
@@ -84,7 +84,9 @@ describe("web_search registration", () => {
 
   it("requires only the query and rejects a value above the ceiling", () => {
     vi.stubEnv("EXA_API_KEY", "k");
-    const { definition } = setup({ providers: ["exa"] }, async () => jsonResponse({ results: [] }));
+    const { definition } = setup({ searchProviders: ["exa"] }, async () =>
+      jsonResponse({ results: [] }),
+    );
 
     expect(acceptsParams(definition.parameters, { query: "q" })).toBe(true);
     expect(acceptsParams(definition.parameters, {})).toBe(false);
@@ -103,7 +105,7 @@ describe("web_search execution", () => {
         { title: "Second", url: "https://b.com", text: "beta" },
       ],
     });
-    const { definition } = setup({ maxResults: 5, providers: ["exa"] }, transport);
+    const { definition } = setup({ maxResults: 5, searchProviders: ["exa"] }, transport);
 
     const output = await definition.execute("id", { query: "q" }, undefined, undefined);
     const text = textOf(output);
@@ -120,7 +122,7 @@ describe("web_search execution", () => {
     const { transport } = fixedTransport({
       results: [{ title: "T", url: "https://a.com", text: "s" }],
     });
-    const { definition } = setup({ maxResults: 4, providers: ["exa"] }, transport);
+    const { definition } = setup({ maxResults: 4, searchProviders: ["exa"] }, transport);
 
     const output = await definition.execute("id", { query: "q" }, undefined, undefined);
 
@@ -133,7 +135,7 @@ describe("web_search execution", () => {
   it("clamps a request above the ceiling at runtime too", async () => {
     vi.stubEnv("EXA_API_KEY", "k");
     const { transport, urls } = fixedTransport({ results: [] });
-    const { definition } = setup({ maxResults: 3, providers: ["exa"] }, transport);
+    const { definition } = setup({ maxResults: 3, searchProviders: ["exa"] }, transport);
 
     const output = await definition.execute(
       "id",
@@ -149,7 +151,7 @@ describe("web_search execution", () => {
   it("says which provider answered when there are no results", async () => {
     vi.stubEnv("EXA_API_KEY", "k");
     const { transport } = fixedTransport({ results: [] });
-    const { definition } = setup({ maxResults: 5, providers: ["exa"] }, transport);
+    const { definition } = setup({ maxResults: 5, searchProviders: ["exa"] }, transport);
 
     const output = await definition.execute("id", { query: "nothing" }, undefined, undefined);
 
@@ -160,7 +162,7 @@ describe("web_search execution", () => {
   it("reports progress before the attempt", async () => {
     vi.stubEnv("EXA_API_KEY", "k");
     const { transport } = fixedTransport({ results: [] });
-    const { definition } = setup({ providers: ["exa"] }, transport);
+    const { definition } = setup({ searchProviders: ["exa"] }, transport);
     const updates: unknown[] = [];
 
     await definition.execute("id", { query: "q" }, undefined, (update) => updates.push(update));
@@ -176,11 +178,11 @@ describe("web_search execution", () => {
     const configPath = join(dir, "config.json");
     vi.stubEnv("PI_PKG_CFG_DIR", root);
     vi.stubEnv("EXA_API_KEY", "k");
-    writeFileSync(configPath, JSON.stringify({ providers: ["exa"], maxResults: 5 }), "utf8");
+    writeFileSync(configPath, JSON.stringify({ searchProviders: ["exa"], maxResults: 5 }), "utf8");
 
     const { api, tools } = captureApi();
     registerWebSearchTool(api, {
-      config: { providers: ["exa"], maxResults: 5 },
+      config: { searchProviders: ["exa"], maxResults: 5 },
       transport: async (url) =>
         new URL(url).hostname === "api.exa.ai"
           ? jsonResponse({ results: [{ title: "A", url: "https://a.com", text: "x" }] })
@@ -194,7 +196,11 @@ describe("web_search execution", () => {
       expect(first.details["requestedResults"]).toBe(5);
 
       // The chain and ceiling on disk change; the tool must not reuse its snapshot.
-      writeFileSync(configPath, JSON.stringify({ providers: ["exa"], maxResults: 2 }), "utf8");
+      writeFileSync(
+        configPath,
+        JSON.stringify({ searchProviders: ["exa"], maxResults: 2 }),
+        "utf8",
+      );
       const second = await definition.execute("id", { query: "q" }, undefined, undefined);
       expect(second.details["requestedResults"]).toBe(2);
     } finally {
@@ -204,7 +210,7 @@ describe("web_search execution", () => {
 
   it("surfaces an exhausted chain as an error", async () => {
     vi.stubEnv("EXA_API_KEY", "k");
-    const { definition } = setup({ providers: ["exa"] }, async () => jsonResponse({}, 401));
+    const { definition } = setup({ searchProviders: ["exa"] }, async () => jsonResponse({}, 401));
 
     await expect(
       definition.execute("id", { query: "q" }, undefined, undefined),

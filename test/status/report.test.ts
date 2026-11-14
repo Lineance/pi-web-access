@@ -33,7 +33,7 @@ describe("describeStatus", () => {
   });
 
   it("puts chain members first, in chain order", () => {
-    const snapshot = report({ config: { providers: ["bing", "tavily"] } });
+    const snapshot = report({ config: { searchProviders: ["bing", "tavily"] } });
     const searchNames = snapshot.providers
       .filter((provider) => provider.side === "search")
       .map((provider) => provider.name);
@@ -50,7 +50,10 @@ describe("describeStatus", () => {
   });
 
   it("reports a key supplied through the environment", () => {
-    const snapshot = report({ config: { providers: ["tavily"] }, env: { TAVILY_API_KEY: "x" } });
+    const snapshot = report({
+      config: { searchProviders: ["tavily"] },
+      env: { TAVILY_API_KEY: "x" },
+    });
 
     expect(row(snapshot, "tavily")?.key).toEqual({ state: "env", variable: "TAVILY_API_KEY" });
   });
@@ -73,7 +76,7 @@ describe("describeStatus", () => {
 
   it("never reports a file key for a custom provider", () => {
     const snapshot = report({
-      config: { providers: ["mine"], apiKeys: { mine: "from-file" } },
+      config: { searchProviders: ["mine"], apiKeys: { mine: "from-file" } },
       catalog: catalogWith({
         search: {
           mine: {
@@ -95,7 +98,7 @@ describe("describeStatus", () => {
 
   it("reports an environment key for a custom provider", () => {
     const snapshot = report({
-      config: { providers: ["mine"] },
+      config: { searchProviders: ["mine"] },
       catalog: catalogWith({
         search: {
           mine: {
@@ -130,7 +133,7 @@ describe("describeStatus", () => {
   });
 
   it("reports a chain entry that no catalog knows", () => {
-    const snapshot = report({ config: { providers: ["typo", "exa-free"] } });
+    const snapshot = report({ config: { searchProviders: ["typo", "exa-free"] } });
 
     expect(snapshot.chainProblems).toEqual([
       { side: "search", name: "typo", message: 'unknown search provider "typo"' },
@@ -168,7 +171,7 @@ describe("describeStatus", () => {
   });
 
   it("treats an empty configured chain as unset", () => {
-    const config: WebConfig = { providers: [] };
+    const config: WebConfig = { searchProviders: [] };
 
     expect(report({ config }).searchChain).toEqual(["exa-free"]);
   });

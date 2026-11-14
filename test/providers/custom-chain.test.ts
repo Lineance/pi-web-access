@@ -70,7 +70,7 @@ describe("a custom search provider in the chain", () => {
     const outcome = await searchWithChain(
       "cats",
       3,
-      { providers: ["my-engine"] },
+      { searchProviders: ["my-engine"] },
       { transport, catalog },
     );
 
@@ -85,7 +85,7 @@ describe("a custom search provider in the chain", () => {
     const error = await searchWithChain(
       "q",
       3,
-      { providers: ["my-reader"] },
+      { searchProviders: ["my-reader"] },
       {
         transport: async () => jsonResponse({}),
         catalog,
@@ -117,7 +117,7 @@ describe("a custom search provider in the chain", () => {
       await searchWithChain(
         "q",
         1,
-        { providers: ["keyed"], apiKeys: { keyed: "from-file" } },
+        { searchProviders: ["keyed"], apiKeys: { keyed: "from-file" } },
         {
           transport,
           catalog,
@@ -135,7 +135,7 @@ describe("a custom search provider in the chain", () => {
     const error = await searchWithChain(
       "q",
       1,
-      { providers: ["keyed"], apiKeys: { keyed: "from-file" } },
+      { searchProviders: ["keyed"], apiKeys: { keyed: "from-file" } },
       { transport, catalog },
     ).catch((caught: unknown) => caught);
 

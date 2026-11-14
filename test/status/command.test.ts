@@ -142,7 +142,7 @@ describe("the status command", () => {
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "config.json"),
-      JSON.stringify({ providers: ["bing", "exa-free"], maxResults: 3 }),
+      JSON.stringify({ searchProviders: ["bing", "exa-free"], maxResults: 3 }),
       "utf8",
     );
 

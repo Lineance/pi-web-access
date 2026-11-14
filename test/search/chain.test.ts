@@ -52,7 +52,7 @@ describe("buildSearchChain", () => {
   it("refuses an unknown provider", () => {
     const error = (() => {
       try {
-        buildSearchChain({ providers: ["nope"] });
+        buildSearchChain({ searchProviders: ["nope"] });
         return undefined;
       } catch (caught) {
         return caught;
@@ -67,7 +67,7 @@ describe("buildSearchChain", () => {
   it("refuses a provider that cannot search", () => {
     const error = (() => {
       try {
-        buildSearchChain({ providers: ["local"] });
+        buildSearchChain({ searchProviders: ["local"] });
         return undefined;
       } catch (caught) {
         return caught;
@@ -79,13 +79,13 @@ describe("buildSearchChain", () => {
   });
 
   it("demotes a cooled provider inside its own tier", () => {
-    const config: WebConfig = { providers: ["tavily", "exa", "bing"] };
+    const config: WebConfig = { searchProviders: ["tavily", "exa", "bing"] };
 
     expect(buildSearchChain(config, healthMarking(["tavily"]))).toEqual(["exa", "tavily", "bing"]);
   });
 
   it("keeps configured order when nothing is cooled", () => {
-    const config: WebConfig = { providers: ["bing", "tavily"] };
+    const config: WebConfig = { searchProviders: ["bing", "tavily"] };
 
     expect(buildSearchChain(config, healthMarking([]))).toEqual(["bing", "tavily"]);
   });
@@ -109,7 +109,7 @@ describe("searchWithChain", () => {
     const outcome = await searchWithChain(
       "query",
       5,
-      { providers: ["tavily", "exa"] },
+      { searchProviders: ["tavily", "exa"] },
       { transport },
     );
 
@@ -127,7 +127,7 @@ describe("searchWithChain", () => {
       { host: "api.tavily.com", respond: () => json({ results: [] }) },
     ]);
 
-    await searchWithChain("query", 20, { providers: ["tavily"] }, { transport });
+    await searchWithChain("query", 20, { searchProviders: ["tavily"] }, { transport });
 
     const body = JSON.parse(calls[0]!.body) as Record<string, unknown>;
     // Tavily accepts 20, so the global value passes through unchanged.
@@ -140,7 +140,7 @@ describe("searchWithChain", () => {
       { host: "api.exa.ai", respond: () => json({ results: [] }) },
     ]);
 
-    await searchWithChain("query", 20, { providers: ["exa"] }, { transport });
+    await searchWithChain("query", 20, { searchProviders: ["exa"] }, { transport });
 
     const body = JSON.parse(calls[0]!.body) as Record<string, unknown>;
     // Exa's registry ceiling is 10, so it never sees 20.
@@ -158,7 +158,7 @@ describe("searchWithChain", () => {
     const error = await searchWithChain(
       "query",
       5,
-      { providers: ["tavily", "exa"] },
+      { searchProviders: ["tavily", "exa"] },
       {
         transport,
       },
@@ -183,7 +183,7 @@ describe("searchWithChain", () => {
     await searchWithChain(
       "query",
       5,
-      { providers: ["tavily", "exa"] },
+      { searchProviders: ["tavily", "exa"] },
       {
         transport,
         onAttempt: (provider) => seen.push(provider),
@@ -205,7 +205,7 @@ describe("searchWithChain", () => {
       },
     ]);
 
-    const outcome = await searchWithChain("query", 5, { providers: ["exa"] }, { transport });
+    const outcome = await searchWithChain("query", 5, { searchProviders: ["exa"] }, { transport });
 
     expect(outcome.value[0]?.snippet.length).toBe(2_048);
   });

@@ -24,7 +24,7 @@ describe("getChain", () => {
   });
 
   it("reads the search chain from providers", () => {
-    expect(getChain({ providers: ["tavily", "exa"] }, "search")).toEqual(["tavily", "exa"]);
+    expect(getChain({ searchProviders: ["tavily", "exa"] }, "search")).toEqual(["tavily", "exa"]);
   });
 
   it("reads the fetch chain from fetchProviders", () => {
@@ -32,11 +32,11 @@ describe("getChain", () => {
   });
 
   it("trims and deduplicates", () => {
-    expect(getChain({ providers: [" exa", "exa", "", "  "] }, "search")).toEqual(["exa"]);
+    expect(getChain({ searchProviders: [" exa", "exa", "", "  "] }, "search")).toEqual(["exa"]);
   });
 
   it("treats an explicitly empty chain as unset", () => {
-    expect(getChain({ providers: [] }, "search")).toEqual([...DEFAULT_SEARCH_CHAIN]);
+    expect(getChain({ searchProviders: [] }, "search")).toEqual([...DEFAULT_SEARCH_CHAIN]);
   });
 });
 

@@ -31,14 +31,14 @@ const configLine = (output: string[]): string =>
 
 describe("formatStatus", () => {
   it("heads each section with its chain", () => {
-    const output = lines({ config: { providers: ["tavily", "exa-free"] } });
+    const output = lines({ config: { searchProviders: ["tavily", "exa-free"] } });
 
     expect(output[0]).toBe("search  tavily → exa-free");
     expect(output).toContain("fetch  local");
   });
 
   it("marks a usable provider with a tick and an unusable one with a dot", () => {
-    const output = lines({ config: { providers: ["tavily", "exa-free"] } });
+    const output = lines({ config: { searchProviders: ["tavily", "exa-free"] } });
 
     expect(lineFor(output, "tavily").startsWith("  ·")).toBe(true);
     expect(lineFor(output, "exa-free").startsWith("  ✓")).toBe(true);
@@ -46,7 +46,7 @@ describe("formatStatus", () => {
 
   it("shows the environment variable name, never a value", () => {
     const output = lines({
-      config: { providers: ["tavily"] },
+      config: { searchProviders: ["tavily"] },
       env: { TAVILY_API_KEY: "sk-live-DEADBEEF" },
     });
 
@@ -62,7 +62,7 @@ describe("formatStatus", () => {
   });
 
   it("shows the tier, the cap and the chain membership", () => {
-    const output = lines({ config: { providers: ["tavily"] } }, { all: true });
+    const output = lines({ config: { searchProviders: ["tavily"] } }, { all: true });
 
     const tavily = lineFor(output, "tavily");
     expect(tavily).toContain("t1");
@@ -75,7 +75,7 @@ describe("formatStatus", () => {
 
   it("marks a custom provider and an env-only miss", () => {
     const output = lines({
-      config: { providers: ["mine"] },
+      config: { searchProviders: ["mine"] },
       catalog: buildCatalog(
         readCustomProviders({
           search: {
@@ -121,7 +121,7 @@ describe("formatStatus", () => {
 
   it("lists chain problems and rejected providers", () => {
     const output = lines({
-      config: { providers: ["typo"] },
+      config: { searchProviders: ["typo"] },
       issues: [{ side: "fetch", name: "bad", message: "does not match the schema" }],
     });
 

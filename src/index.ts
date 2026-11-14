@@ -47,10 +47,10 @@ export default async function registerWebTools(pi: ExtensionAPI): Promise<void> 
   const fetchTransport = await createTransport({ ...proxyOptions, guardDns: true });
   const health = NOOP_HEALTH;
 
-  const searchChain = (config.providers ?? catalog.searchNames().slice(0, 1)).join(",");
+  const searchChain = (config.searchProviders ?? catalog.searchNames().slice(0, 1)).join(",");
   const fetchChain = (config.fetchProviders ?? catalog.fetchNames().slice(0, 1)).join(",");
   console.error(
-    `[pi-web-access] maxResults=${resolveMaxResults(config)} providers=${searchChain} fetch=${fetchChain}`,
+    `[pi-web-access] maxResults=${resolveMaxResults(config)} search=${searchChain} fetch=${fetchChain}`,
   );
 
   registerWebSearchTool(pi, { config, transport: searchTransport, catalog, health });

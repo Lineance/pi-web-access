@@ -10,7 +10,7 @@ export const WebConfigSchema = Type.Object(
   {
     /** Both the default and the ceiling for `web_search` result count. */
     maxResults: Type.Optional(Type.Number()),
-    providers: Type.Optional(Type.Array(Type.String())),
+    searchProviders: Type.Optional(Type.Array(Type.String())),
     fetchProviders: Type.Optional(Type.Array(Type.String())),
     apiKeys: Type.Optional(Type.Record(Type.String(), Type.String())),
     baseUrls: Type.Optional(Type.Record(Type.String(), Type.String())),
@@ -35,7 +35,7 @@ export type WebConfig = Static<typeof WebConfigSchema>;
 /** Keys this version understands. Anything else is reported, never fatal. */
 export const KNOWN_KEYS: ReadonlySet<string> = new Set([
   "maxResults",
-  "providers",
+  "searchProviders",
   "fetchProviders",
   "apiKeys",
   "baseUrls",
