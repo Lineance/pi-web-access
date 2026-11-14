@@ -5,6 +5,7 @@ import { readConfig, resolveMaxResults } from "./config/paths.js";
 import { resolveProxy } from "./config/resolve.js";
 import { NOOP_HEALTH } from "./orchestrator/health.js";
 import { buildCatalog } from "./providers/catalog.js";
+import { registerStatusCommand } from "./status/command.js";
 import { registerWebFetchTool } from "./fetch/tool.js";
 import { registerWebSearchTool } from "./search/tool.js";
 import { createTransport } from "./transport/transport.js";
@@ -54,4 +55,6 @@ export default async function registerWebTools(pi: ExtensionAPI): Promise<void> 
 
   registerWebSearchTool(pi, { config, transport: searchTransport, catalog, health });
   registerWebFetchTool(pi, { config, transport: fetchTransport, catalog, health });
+  // The command re-reads the config itself, so it reflects edits without a restart.
+  registerStatusCommand(pi);
 }

@@ -134,6 +134,9 @@ Built-in vendors use exactly this shape in code rather than living in this file:
 their field mappings follow the vendors' APIs, so a renamed field is fixed by a
 release instead of silently rotting in every copy.
 
+`/web-access-status` prints every provider, its tier, where its key comes from and
+whether it is in the active chain — without printing the key itself.
+
 ## Notes
 
 - `web_fetch` refuses private, loopback and otherwise non-public addresses, and
