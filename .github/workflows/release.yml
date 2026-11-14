@@ -1,4 +1,4 @@
-name: Publish
+name: Release
 
 # Trusted publishing: npm exchanges this workflow's OIDC token for a short-lived
 # publish credential. No npm token exists anywhere in this repository, and
