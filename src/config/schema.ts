@@ -20,6 +20,11 @@ export const WebConfigSchema = Type.Object(
         fetch: Type.Optional(Type.Record(Type.String(), Type.Number())),
       }),
     ),
+    /**
+     * Provider declarations. Shape is validated by the provider side, so a bad
+     * entry is rejected by name instead of invalidating the whole file.
+     */
+    customProviders: Type.Optional(Type.Unknown()),
     proxy: Type.Optional(Type.String()),
   },
   { additionalProperties: true },
@@ -35,6 +40,7 @@ export const KNOWN_KEYS: ReadonlySet<string> = new Set([
   "apiKeys",
   "baseUrls",
   "tiers",
+  "customProviders",
   "proxy",
 ]);
 

@@ -1,6 +1,6 @@
 import { fetch as undiciFetch, type Agent, type Dispatcher } from "undici";
 
-import { createFetchAgent } from "../fetch/ssrf.js";
+import { createFetchAgent } from "./address.js";
 
 import { fetchWithInstalledProxy, getInstalledProxyUrl, installProxyDispatcher } from "./proxy.js";
 

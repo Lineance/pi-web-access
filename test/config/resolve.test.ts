@@ -74,21 +74,25 @@ describe("tierLookup", () => {
 describe("resolveApiKey", () => {
   it("prefers the environment over the file", () => {
     vi.stubEnv("TAVILY_API_KEY", "from-env");
-    expect(resolveApiKey("tavily", { apiKeys: { tavily: "from-file" } })).toBe("from-env");
+    expect(resolveApiKey("search", "tavily", { apiKeys: { tavily: "from-file" } })).toBe(
+      "from-env",
+    );
   });
 
   it("falls back to the file", () => {
     vi.stubEnv("TAVILY_API_KEY", "");
-    expect(resolveApiKey("tavily", { apiKeys: { tavily: "from-file" } })).toBe("from-file");
+    expect(resolveApiKey("search", "tavily", { apiKeys: { tavily: "from-file" } })).toBe(
+      "from-file",
+    );
   });
 
   it("returns nothing for a keyless provider", () => {
-    expect(resolveApiKey("bing", { apiKeys: { bing: "ignored" } })).toBeUndefined();
+    expect(resolveApiKey("search", "bing", { apiKeys: { bing: "ignored" } })).toBeUndefined();
   });
 
   it("returns nothing when unset", () => {
     vi.stubEnv("EXA_API_KEY", "");
-    expect(resolveApiKey("exa", {})).toBeUndefined();
+    expect(resolveApiKey("search", "exa", {})).toBeUndefined();
   });
 });
 

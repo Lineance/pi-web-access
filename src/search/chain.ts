@@ -4,8 +4,8 @@ import { arrangeChain } from "../orchestrator/arrange.js";
 import { runChain, type ChainAttempt, type ChainOutcome } from "../orchestrator/chain.js";
 import { WebSearchError } from "../orchestrator/errors.js";
 import type { ChainHealth } from "../orchestrator/health.js";
-import { createSearchProvider, supportsCapability } from "../providers/factory.js";
-import { findProviderMeta } from "../providers/registry.js";
+import { BUILTIN_CATALOG, type ProviderCatalog } from "../providers/catalog.js";
+import { createSearchProvider } from "../providers/search/factory.js";
 import type { SearchResult } from "../providers/types.js";
 import type { Transport } from "../transport/transport.js";
 
@@ -19,27 +19,31 @@ export const SEARCH_PER_ATTEMPT_MS = 15_000;
 
 export interface SearchChainOptions {
   readonly transport: Transport;
+  readonly catalog?: ProviderCatalog;
   readonly health?: ChainHealth;
   readonly signal?: AbortSignal;
   readonly onAttempt?: (provider: string, label: string) => void;
 }
 
-export function buildSearchChain(config: WebConfig, health?: ChainHealth): string[] {
-  const configured = getChain(config, "search");
+export function buildSearchChain(
+  config: WebConfig,
+  health?: ChainHealth,
+  catalog: ProviderCatalog = BUILTIN_CATALOG,
+): string[] {
   const usable: string[] = [];
-  for (const name of configured) {
-    if (!findProviderMeta(name)) {
-      throw new WebSearchError("config", name, `unknown search provider "${name}"`);
-    }
-    if (!supportsCapability(name, "search")) {
-      throw new WebSearchError("config", name, `provider "${name}" does not support search`);
+  for (const name of getChain(config, "search")) {
+    const meta = catalog.searchMeta(name);
+    if (meta === undefined) {
+      throw catalog.fetchMeta(name) === undefined
+        ? new WebSearchError("config", name, `unknown search provider "${name}"`)
+        : new WebSearchError("config", name, `provider "${name}" does not support search`);
     }
     usable.push(name);
   }
 
   return arrangeChain({
     names: usable,
-    tierOf: tierLookup(config, "search"),
+    tierOf: tierLookup(config, "search", catalog),
     isCooled: health ? (name) => health.isCooled("search", name) : () => false,
   });
 }
@@ -50,14 +54,20 @@ export async function searchWithChain(
   config: WebConfig,
   options: SearchChainOptions,
 ): Promise<ChainOutcome<SearchResult[]>> {
-  const names = buildSearchChain(config, options.health);
+  const catalog = options.catalog ?? BUILTIN_CATALOG;
+  const names = buildSearchChain(config, options.health, catalog);
 
   const attempts: ChainAttempt<SearchResult[]>[] = names.map((name) => {
-    const provider = createSearchProvider(name, options.transport, {
-      apiKey: resolveApiKey(name, config),
-      baseUrl: resolveBaseUrl(name, config),
-    });
-    const cap = findProviderMeta(name)?.maxResults ?? maxResults;
+    const provider = createSearchProvider(
+      name,
+      options.transport,
+      {
+        apiKey: resolveApiKey("search", name, config, catalog),
+        baseUrl: resolveBaseUrl(name, config, catalog),
+      },
+      catalog,
+    );
+    const cap = catalog.searchMeta(name)?.maxResults ?? maxResults;
     const perProvider = Math.min(maxResults, cap);
     return {
       provider: name,
@@ -66,7 +76,7 @@ export async function searchWithChain(
     };
   });
 
-  return runChain(attempts, {
+  const outcome = await runChain(attempts, {
     capability: "search",
     totalMs: Number.POSITIVE_INFINITY,
     perAttemptMs: SEARCH_PER_ATTEMPT_MS,
@@ -74,8 +84,7 @@ export async function searchWithChain(
     ...(options.health ? { health: options.health } : {}),
     ...(options.signal ? { signal: options.signal } : {}),
     ...(options.onAttempt ? { onAttempt: options.onAttempt } : {}),
-  }).then((outcome) => ({
-    ...outcome,
-    value: normalizeSearchResults(outcome.value, maxResults),
-  }));
+  });
+
+  return { ...outcome, value: normalizeSearchResults(outcome.value, maxResults) };
 }

@@ -1,11 +1,11 @@
-import { getChain, tierLookup } from "../config/resolve.js";
+import { getChain, resolveApiKey, tierLookup } from "../config/resolve.js";
 import type { WebConfig } from "../config/schema.js";
 import { arrangeChain } from "../orchestrator/arrange.js";
 import { runChain, type ChainAttempt, type ChainOutcome } from "../orchestrator/chain.js";
 import { WebSearchError } from "../orchestrator/errors.js";
 import type { ChainHealth } from "../orchestrator/health.js";
-import { createFetchProvider, supportsCapability } from "../providers/factory.js";
-import { findProviderMeta } from "../providers/registry.js";
+import { BUILTIN_CATALOG, type ProviderCatalog } from "../providers/catalog.js";
+import { createFetchProvider } from "../providers/fetch/factory.js";
 import type { FetchedContent } from "../providers/types.js";
 import type { Transport } from "../transport/transport.js";
 
@@ -15,35 +15,35 @@ export const FETCH_PER_ATTEMPT_MS = 15_000;
 export const FETCH_MIN_ATTEMPT_MS = 5_000;
 
 /**
- * Below this, a 200 response is a verification page, a 404 body, or a
- * JavaScript shell rather than content. Applied only while attempts remain; a
- * short page from the last attempt is still returned.
+ * Below this, a 200 response is a verification page, a 404 body, or a JavaScript
+ * shell rather than content. Applied only while attempts remain; a short page from
+ * the last attempt is still returned.
  */
 export const MIN_USEFUL_TEXT_CHARS = 200;
 
 export interface FetchChainOptions {
   readonly raw: boolean;
   readonly transport: Transport;
+  readonly catalog?: ProviderCatalog;
   readonly health?: ChainHealth;
   readonly signal?: AbortSignal;
   readonly onAttempt?: (provider: string, label: string) => void;
 }
 
-/** Raw markup can only come from the local transport; remote readers cannot. */
+/** Raw markup can only come from the local provider; remote readers cannot. */
 export function buildFetchChain(
   config: WebConfig,
-  options: { raw: boolean; health?: ChainHealth },
+  options: { raw: boolean; health?: ChainHealth; catalog?: ProviderCatalog },
 ): string[] {
   if (options.raw) return ["local"];
 
-  const configured = getChain(config, "fetch");
+  const catalog = options.catalog ?? BUILTIN_CATALOG;
   const usable: string[] = [];
-  for (const name of configured) {
-    if (!findProviderMeta(name)) {
-      throw new WebSearchError("config", name, `unknown fetch provider "${name}"`);
-    }
-    if (!supportsCapability(name, "fetch")) {
-      throw new WebSearchError("config", name, `provider "${name}" does not support fetch`);
+  for (const name of getChain(config, "fetch")) {
+    if (catalog.fetchMeta(name) === undefined) {
+      throw catalog.searchMeta(name) === undefined
+        ? new WebSearchError("config", name, `unknown fetch provider "${name}"`)
+        : new WebSearchError("config", name, `provider "${name}" does not support fetch`);
     }
     usable.push(name);
   }
@@ -51,7 +51,7 @@ export function buildFetchChain(
   const cooled = options.health;
   return arrangeChain({
     names: usable,
-    tierOf: tierLookup(config, "fetch"),
+    tierOf: tierLookup(config, "fetch", catalog),
     isCooled: cooled ? (name) => cooled.isCooled("fetch", name) : () => false,
   });
 }
@@ -61,9 +61,20 @@ export async function fetchWithChain(
   config: WebConfig,
   options: FetchChainOptions,
 ): Promise<ChainOutcome<FetchedContent>> {
-  const names = buildFetchChain(config, options);
+  const catalog = options.catalog ?? BUILTIN_CATALOG;
+  const names = buildFetchChain(config, {
+    raw: options.raw,
+    ...(options.health ? { health: options.health } : {}),
+    catalog,
+  });
+
   const attempts: ChainAttempt<FetchedContent>[] = names.map((name) => {
-    const provider = createFetchProvider(name, options.transport);
+    const provider = createFetchProvider(
+      name,
+      options.transport,
+      { apiKey: resolveApiKey("fetch", name, config, catalog) },
+      catalog,
+    );
     return {
       provider: name,
       label: provider.label,

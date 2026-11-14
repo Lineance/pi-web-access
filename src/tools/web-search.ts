@@ -4,6 +4,7 @@ import { Type } from "typebox";
 import { resolveMaxResults } from "../config/paths.js";
 import type { WebConfig } from "../config/schema.js";
 import type { ChainHealth } from "../orchestrator/health.js";
+import type { ProviderCatalog } from "../providers/catalog.js";
 import type { SearchResult } from "../providers/types.js";
 import { searchWithChain } from "../search/chain.js";
 import type { Transport } from "../transport/transport.js";
@@ -11,6 +12,7 @@ import type { Transport } from "../transport/transport.js";
 export interface SearchToolDeps {
   config: WebConfig;
   transport: Transport;
+  catalog?: ProviderCatalog;
   health?: ChainHealth;
 }
 
@@ -39,6 +41,7 @@ export function registerWebSearchTool(pi: ExtensionAPI, deps: SearchToolDeps): v
 
       const outcome = await searchWithChain(params.query, requested, deps.config, {
         transport: deps.transport,
+        ...(deps.catalog ? { catalog: deps.catalog } : {}),
         ...(deps.health ? { health: deps.health } : {}),
         ...(signal ? { signal } : {}),
         onAttempt: (provider, label) => {
