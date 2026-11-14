@@ -173,8 +173,8 @@ token is stored in the repository, and provenance is attached automatically.
 
 Once per package, on npmjs.com:
 
-- `Publish` workflow must be registered as a GitHub Actions trusted publisher with
-  workflow filename `publish.yml`, and **`npm publish` must be explicitly
+- `Release` workflow must be registered as a GitHub Actions trusted publisher with
+  workflow filename `release.yml`, and **`npm publish` must be explicitly
   allowed** — new configurations default to staged publishing only.
 - A new configuration has to complete its first publish within two days, and the
   package must already exist to be registered, so the very first release is

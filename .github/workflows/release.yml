@@ -7,7 +7,7 @@ name: Publish
 # Prerequisites, once per package:
 #   npmjs.com -> Packages -> pi-web-access -> Settings -> Trusted publishing
 #     Provider:          GitHub Actions
-#     Workflow filename: publish.yml
+#     Workflow filename: release.yml
 #     Allowed actions:   npm publish   (not selected automatically)
 #   A new configuration must complete its first publish within 2 days or it
 #   expires, and the package therefore has to exist before it can be registered.
