@@ -10,7 +10,7 @@ import type { ProviderMeta } from "./types.js";
 export const PROVIDERS: readonly ProviderMeta[] = [
   {
     name: "local",
-    label: "Local (SSRF-safe direct fetch)",
+    label: "Local",
     keyless: true,
     capabilities: { search: false, fetch: true },
     tiers: { fetch: 1 },

@@ -1,13 +1,10 @@
 import { notImplemented } from "../../not-implemented.js";
 import type { FetchedContent } from "../types.js";
 
-/**
- * The built-in fetch transport: SSRF-guarded direct HTTP, no credential, no
- * third party. Always the first link of the fetch chain.
- */
+/** Fetches the URL itself. No third party is involved. */
 export class LocalFetchProvider {
   readonly name = "local";
-  readonly label = "Local (SSRF-safe direct fetch)";
+  readonly label = "Local";
 
   fetch(url: string, _signal?: AbortSignal): Promise<FetchedContent> {
     void url;

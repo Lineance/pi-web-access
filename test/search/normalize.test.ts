@@ -5,7 +5,7 @@ import {
   MAX_SEARCH_SNIPPET_BYTES,
   normalizeSearchResults,
   truncateUtf8,
-} from "./normalize.js";
+} from "../../src/search/normalize.js";
 
 describe("truncateUtf8", () => {
   it("leaves short text untouched", () => {

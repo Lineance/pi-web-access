@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyContentType, isHtmlMimeType, normalizeMimeType } from "./content-kind.js";
+import {
+  classifyContentType,
+  isHtmlMimeType,
+  normalizeMimeType,
+} from "../../src/fetch/content-kind.js";
 
 describe("normalizeMimeType", () => {
   it("drops parameters and lowercases", () => {

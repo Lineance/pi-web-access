@@ -110,7 +110,11 @@ export async function runChain<T>(
       if (options.signal?.aborted) throw options.signal.reason ?? error;
 
       const failure = timeoutSignal.aborted
-        ? { provider: attempt.provider, kind: "timeout" as FailureKind, message: `timed out after ${budget}ms` }
+        ? {
+            provider: attempt.provider,
+            kind: "timeout" as FailureKind,
+            message: `timed out after ${budget}ms`,
+          }
         : toFailure(attempt.provider, error);
 
       failures.push(failure);

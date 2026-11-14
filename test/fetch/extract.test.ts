@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decodeEntities, extractTitle, htmlToText } from "./extract.js";
+import { decodeEntities, extractTitle, htmlToText } from "../../src/fetch/extract.js";
 
 describe("htmlToText", () => {
   it("returns an empty string for empty input", () => {
@@ -8,7 +8,8 @@ describe("htmlToText", () => {
   });
 
   it("drops script, style and noscript bodies", () => {
-    const html = "<p>keep</p><script>var secret = 1;</script><style>.a{color:red}</style><noscript>no js</noscript>";
+    const html =
+      "<p>keep</p><script>var secret = 1;</script><style>.a{color:red}</style><noscript>no js</noscript>";
 
     const text = htmlToText(html);
 

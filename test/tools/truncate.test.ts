@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { truncateForContext } from "./truncate.js";
+import { truncateForContext } from "../../src/tools/truncate.js";
 
 describe("truncateForContext", () => {
   it("passes short text through untouched", () => {

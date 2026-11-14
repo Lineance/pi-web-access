@@ -7,12 +7,15 @@ import {
   parseAndAssertFetchUrl,
   type HostResolver,
   type ResolvedAddress,
-} from "./ssrf.js";
+} from "../../src/fetch/ssrf.js";
 
 const resolverAnswering =
   (...addresses: string[]): HostResolver =>
   async () =>
-    addresses.map((address) => ({ address, family: address.includes(":") ? 6 : 4 })) as ResolvedAddress[];
+    addresses.map((address) => ({
+      address,
+      family: address.includes(":") ? 6 : 4,
+    })) as ResolvedAddress[];
 
 describe("isNonPublicIpAddress", () => {
   it.each([
@@ -116,15 +119,18 @@ describe("parseAndAssertFetchUrl", () => {
 
 describe("assertPublicResolution", () => {
   it("passes a name that resolves to a public address", async () => {
-    const addresses = await assertPublicResolution("example.com", resolverAnswering("93.184.216.34"));
+    const addresses = await assertPublicResolution(
+      "example.com",
+      resolverAnswering("93.184.216.34"),
+    );
 
     expect(addresses).toEqual([{ address: "93.184.216.34", family: 4 }]);
   });
 
   it("refuses a name that resolves to a private address", async () => {
-    await expect(assertPublicResolution("evil.test", resolverAnswering("10.0.0.5"))).rejects.toThrow(
-      /resolved to private\/loopback/,
-    );
+    await expect(
+      assertPublicResolution("evil.test", resolverAnswering("10.0.0.5")),
+    ).rejects.toThrow(/resolved to private\/loopback/);
   });
 
   it("refuses when any one answer is private", async () => {

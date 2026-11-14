@@ -32,21 +32,20 @@
   },
   "files": [
     "dist/**",
-    "!dist/**/*.test.js",
-    "!dist/**/*.test.d.ts",
-    "!dist/**/*.d.ts.map",
-    "!dist/**/*.js.map",
-    "!dist/**/__fixtures__/**",
     "docs/config.example.json",
     "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node -e \"import('./dist/index.js').then((m) => { if (typeof m.default !== 'function') { console.error('dist/index.js default export is not a function'); process.exit(1); } console.log('smoke ok'); })\"",
-    "prepublishOnly": "npm run typecheck && npm run test && npm run build && npm run smoke"
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build && npm run smoke"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=1.1.0",
@@ -56,8 +55,13 @@
     "undici": "8.12.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.0",
     "@types/node": "^22.0.0",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.0",
+    "prettier": "^3.6.0",
     "typescript": "^5.9.0",
+    "typescript-eslint": "^8.46.0",
     "vitest": "^4.1.11"
   },
   "engines": {

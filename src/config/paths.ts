@@ -2,12 +2,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import {
-  clampMaxResults,
-  isWebConfig,
-  unknownConfigKeys,
-  type WebConfig,
-} from "./schema.js";
+import { clampMaxResults, isWebConfig, unknownConfigKeys, type WebConfig } from "./schema.js";
 
 const PKG_DIRNAME = "laboon-web-search";
 
@@ -69,7 +64,13 @@ export function readConfig(): ConfigReadResult {
   }
 
   if (!isWebConfig(raw)) {
-    return { path, status: "invalid", config: {}, error: "does not match the config schema", unknownKeys: [] };
+    return {
+      path,
+      status: "invalid",
+      config: {},
+      error: "does not match the config schema",
+      unknownKeys: [],
+    };
   }
 
   return { path, status: "valid", config: raw, unknownKeys: unknownConfigKeys(raw) };

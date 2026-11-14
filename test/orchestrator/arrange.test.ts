@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { arrangeChain } from "./arrange.js";
+import { arrangeChain } from "../../src/orchestrator/arrange.js";
 
 const tiers =
   (map: Record<string, number>) =>

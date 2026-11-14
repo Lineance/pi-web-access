@@ -44,7 +44,9 @@ export function getInstalledProxyUrl(protocol: "http:" | "https:"): string | und
  * undici's global dispatcher is never touched: pi makes its own requests through
  * it, and hijacking it would change behaviour far outside this extension.
  */
-export async function installProxyDispatcher(configuredProxy?: string): Promise<string | undefined> {
+export async function installProxyDispatcher(
+  configuredProxy?: string,
+): Promise<string | undefined> {
   const explicit = configuredProxy?.trim();
   if (explicit) assertSupportedProxy(explicit);
 

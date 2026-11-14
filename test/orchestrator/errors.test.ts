@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { ChainExhaustedError, WebSearchError, formatFailures, kindForStatus, toFailure } from "./errors.js";
+import {
+  ChainExhaustedError,
+  WebSearchError,
+  formatFailures,
+  kindForStatus,
+  toFailure,
+} from "../../src/orchestrator/errors.js";
 
 describe("kindForStatus", () => {
   it("treats 429 and 402 as quota problems", () => {

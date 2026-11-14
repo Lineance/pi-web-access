@@ -117,7 +117,9 @@ export function parseAndAssertFetchUrl(raw: string): URL {
     throw new Error("Invalid URL.");
   }
   if (!SUPPORTED_PROTOCOLS.has(parsed.protocol)) {
-    throw new Error(`Unsupported URL protocol: ${parsed.protocol}. Only http and https are supported.`);
+    throw new Error(
+      `Unsupported URL protocol: ${parsed.protocol}. Only http and https are supported.`,
+    );
   }
   if (parsed.username || parsed.password) {
     throw new Error("Refusing to fetch a URL with embedded credentials.");
@@ -158,7 +160,7 @@ export async function assertPublicResolution(
  * Doing the check inside `lookup` closes the gap between "we validated the name"
  * and "the socket connected", which a separate pre-flight lookup leaves open.
  */
-export function createSsrfSafeDirectAgent(resolver: HostResolver = resolveHostname): Agent {
+export function createFetchAgent(resolver: HostResolver = resolveHostname): Agent {
   const safeLookup: LookupFunction = (hostname, options, callback) => {
     void assertPublicResolution(hostname, resolver).then(
       (addresses) => {
@@ -181,7 +183,10 @@ export function createSsrfSafeDirectAgent(resolver: HostResolver = resolveHostna
 }
 
 export function normalizeHostname(hostname: string): string {
-  return hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.+$/, "");
+  return hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.+$/, "");
 }
 
 /** Expand the eight 16-bit words of an IPv6 address, including `::` and dotted tails. */
@@ -220,7 +225,5 @@ function nat64EmbeddedIpv4(address: string): string | undefined {
 
 function isIpv4MappedIpv6(address: string): boolean {
   const words = parseIpv6Words(address);
-  return (
-    words.length === 8 && words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff
-  );
+  return words.length === 8 && words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff;
 }
