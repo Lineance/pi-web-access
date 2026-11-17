@@ -276,13 +276,6 @@ Portions of this project are derived from
 under the MIT License. Copyright (c) 2026 byte. The full MIT text is reproduced
 in [LICENSE](./LICENSE).
 
-Thank you, byte. The provider-fallback shape, the address-classification tables,
-the SSE MCP client and the HTML extractor all started as that work, and they are
-still recognisable here after the rewrite. The care that went into the request
-handling — refusing to follow a redirect blindly, checking an address after
-resolution rather than only in the URL, keeping an error short because it lands in
-the context — set the standard this project tried to hold to.
-
 Thanks also to the pi project for an extension surface that makes a package like
 this possible, and to the maintainers of every service listed under Providers for
 keeping a usable free tier alive.
