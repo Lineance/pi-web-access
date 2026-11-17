@@ -22,7 +22,7 @@ export const BUILTIN_FETCH_SPECS: Readonly<Record<string, FetchProviderSpec>> = 
     body: { url: "{urlRaw}", formats: ["markdown"] },
     textPath: "data.markdown",
     titlePath: "data.metadata.title",
-    errorHint: " (keyless tier is IP-capped; FIRECRAWL_API_KEY buys 1,000 credits/month)",
+    errorHint: " (keyless tier is IP-capped; FIRECRAWL_API_KEY buys the registered quota)",
   },
   jina: {
     name: "jina",

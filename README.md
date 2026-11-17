@@ -30,28 +30,25 @@ by the fetch provider chain, not by the call.
 
 ## Providers
 
-| Provider      | Search | Fetch | Key                                                                                 |
-| ------------- | ------ | ----- | ----------------------------------------------------------------------------------- |
-| `local`       | —      | yes   | none (HTML → GFM markdown, in-process)                                              |
-| `pandoc`      | —      | yes   | none (`pandoc` on PATH; fidelity upgrade)                                           |
-| `raw`         | —      | yes   | none (body handed back untouched)                                                   |
-| `firecrawl`   | —      | yes   | optional `FIRECRAWL_API_KEY`; keyless tier per IP, 1,000 credits/month after signup |
-| `jina`        | yes    | yes   | optional `JINA_API_KEY`; keyless 20 RPM/IP, free key 10M tokens                     |
-| `scrapfly`    | —      | yes   | `SCRAPFLY_API_KEY` (1,000 credits one-time)                                         |
-| `tavily`      | yes    | yes   | `TAVILY_API_KEY`; fetch side is Extract, 1,000 credits/month                        |
-| `scrapingant` | —      | yes   | `SCRAPINGANT_API_KEY` (10,000 credits/month)                                        |
-| `scrapingbee` | —      | yes   | `SCRAPINGBEE_API_KEY` (1,000 credits one-time)                                      |
-| `scraperapi`  | —      | yes   | `SCRAPERAPI_API_KEY` (5,000 credits, 7-day trial)                                   |
-| `zenrows`     | —      | yes   | `ZENROWS_API_KEY` (5,000 credits/month)                                             |
-| `exa-free`    | yes    | —     | none (Exa hosted MCP, rate limited per IP)                                          |
-| `bing`        | yes    | —     | none (HTML results)                                                                 |
-| `searxng`     | yes    | —     | none (`SEARXNG_URL`)                                                                |
-| `bocha`       | yes    | —     | `BOCHA_API_KEY`                                                                     |
-| `tavily`      | yes    | —     | `TAVILY_API_KEY`                                                                    |
-| `exa`         | yes    | —     | `EXA_API_KEY`                                                                       |
-| `brave`       | yes    | —     | `BRAVE_SEARCH_API_KEY`                                                              |
-| `jina`        | yes    | —     | `JINA_API_KEY`                                                                      |
-| `firecrawl`   | yes    | —     | `FIRECRAWL_API_KEY`                                                                 |
+| Provider      | Search | Fetch | Key                                             |
+| ------------- | ------ | ----- | ----------------------------------------------- |
+| `local`       | —      | yes   | none (HTML → GFM markdown, in-process)          |
+| `pandoc`      | —      | yes   | none (`pandoc` on PATH; fidelity upgrade)       |
+| `raw`         | —      | yes   | none (body handed back untouched)               |
+| `exa-free`    | yes    | —     | none (Exa hosted MCP, rate limited per IP)      |
+| `bing`        | yes    | —     | none (HTML results)                             |
+| `searxng`     | yes    | —     | none (`SEARXNG_URL`)                            |
+| `bocha`       | yes    | —     | `BOCHA_API_KEY`                                 |
+| `tavily`      | yes    | yes   | `TAVILY_API_KEY` (fetch side is Extract)        |
+| `exa`         | yes    | —     | `EXA_API_KEY`                                   |
+| `brave`       | yes    | —     | `BRAVE_SEARCH_API_KEY`                          |
+| `jina`        | yes    | yes   | optional `JINA_API_KEY` (keyless on fetch)      |
+| `firecrawl`   | yes    | yes   | optional `FIRECRAWL_API_KEY` (keyless on fetch) |
+| `scrapfly`    | —      | yes   | `SCRAPFLY_API_KEY`                              |
+| `scrapingant` | —      | yes   | `SCRAPINGANT_API_KEY`                           |
+| `scrapingbee` | —      | yes   | `SCRAPINGBEE_API_KEY`                           |
+| `scraperapi`  | —      | yes   | `SCRAPERAPI_API_KEY`                            |
+| `zenrows`     | —      | yes   | `ZENROWS_API_KEY`                               |
 
 Defaults with no configuration at all: search uses `exa-free`, fetch uses `local`.
 
@@ -157,40 +154,6 @@ Placeholders: `{query}`, `{queryEncoded}` (for a path segment), `{maxResults}`,
 would corrupt the target), `{apiKey}` (for vendors that take the key as a query
 parameter; a missing key empties the slot), `{baseUrl}` (taken from `baseUrls`).
 
-A worked reader, verified live: Firecrawl is reachable from most networks,
-answers without a key on a per-IP daily tier, and after a free signup carries
-1,000 credits a month on `FIRECRAWL_API_KEY`. Two entries cover both states:
-
-```jsonc
-"customProviders": {
-  "fetch": {
-    "firecrawl-reader": {
-      "label": "Firecrawl (keyless)",
-      "url": "https://api.firecrawl.dev/v2/scrape",
-      "method": "POST",
-      "body": { "url": "{urlRaw}", "formats": ["markdown"] },
-      "fetch": { "textPath": "data.markdown", "titlePath": "data.metadata.title" },
-      "tier": 2
-    },
-    "firecrawl-keyed": {
-      "label": "Firecrawl (1000 credits/mo free)",
-      "url": "https://api.firecrawl.dev/v2/scrape",
-      "method": "POST",
-      "auth": { "header": "authorization", "prefix": "Bearer " },
-      "keyEnv": "FIRECRAWL_API_KEY",
-      "body": { "url": "{urlRaw}", "formats": ["markdown"] },
-      "fetch": { "textPath": "data.markdown", "titlePath": "data.metadata.title" },
-      "tier": 2
-    }
-  }
-}
-```
-
-Put both in `fetchProviders` (e.g. `["pandoc", "local", "firecrawl-reader",
-"firecrawl-keyed", "raw"]`): the keyless entry serves until the IP cap, and the
-keyed entry goes unused until `FIRECRAWL_API_KEY` exists in the environment, at
-which point it takes the registered quota.
-
 Rules, all enforced by name so one bad entry does not take the file down:
 
 - a name may not shadow a built-in provider on either capability — the fetch
@@ -263,7 +226,6 @@ After that, releases are tagged and published by the workflow:
 ```bash
 git tag v0.7.0
 git push origin v0.7.0
-# then publish a GitHub release for that tag
 ```
 
 The workflow refuses to publish when the tag and `package.json` disagree, and
