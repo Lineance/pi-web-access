@@ -3,8 +3,9 @@
 ## What this is
 
 A pi extension exposing `web_search` and `web_fetch`. Both tools run a provider
-chain through one orchestrator; the only domain difference is what "unusable"
-means (an empty result array vs. a body too short to be real content).
+chain through one orchestrator; the domain differences are what "unusable" means
+(an empty result array vs. a body too short to be real content or an empty
+image) and the budget: fetch is bounded end-to-end (30 s), search is not.
 
 ## Commands
 
@@ -22,6 +23,13 @@ Tests live in `test/`, mirroring the `src/` layout. They import from `../../src/
 `pi.extensions` points at `dist/index.js`. A local `pi install` loads the built
 output, so run `npm run build` (or `npm run build -- --watch`) before testing
 inside pi.
+
+## Commits
+
+Commit while you work: one feature or one fix per commit, made when it is done
+and green — never a pile of unrelated changes in a single commit. Write the
+gate-clean state into the commit (typecheck, lint, tests), and let the message
+explain the why, not inventory the what.
 
 ## Non-negotiables
 
@@ -46,8 +54,8 @@ search/                 web_search entry, chain construction, result normalisati
 fetch/                  web_fetch entry, chain construction, context clipping
 status/                 /web-access-status: snapshot, formatting, command
 providers/              who does the work, split by capability
-  search/               types, registry, factory, json/ bing/ exa-mcp/ custom/
-  fetch/                types, registry, factory, local/ custom/
+  search/               types, registry, factory, definitions, json/ bing/ exa-mcp/ custom/
+  fetch/                types, registry, factory, read, request, specs, local/ pandoc/ raw/ custom/
   catalog.ts            lookup over both sides, built-in plus config-declared
 ```
 
@@ -56,7 +64,9 @@ One folder per thing the user or the model can invoke (`search`, `fetch`,
 infrastructure. A capability is expressed by which side of `providers` a module
 lives on, not by a field.
 
-`transport` is injected, never imported by a provider. `arrangeChain` is a pure
+`transport` is injected as the only request path; providers never open
+connections themselves (they may reuse transport's request-building and
+body-reading helpers). `arrangeChain` is a pure
 function of (configured order, tier, cooled set). `runChain` receives attempts
 already in final order and only records outcomes. Each side owns its own context
 budget: `search/normalize.ts` for result fields, `fetch/truncate.ts` for one page.
@@ -78,7 +88,7 @@ Each item is load-bearing. Port them all, and add a test for each.
 | 9   | UTF-8-safe truncation — never split a multi-byte character                                                                                           |
 | 10  | Bing: `200` + large body + zero parsed results means a verification page; throw so the chain advances                                                |
 | 11  | Exa MCP: `Title:`/`URL:` are read only before `Highlights:` and only in blocks that have one (injection guard)                                       |
-| 12  | Config writes are atomic, `0600`, and clean up the temp file on failure                                                                              |
+| 12  | N/A — this extension never writes config; the row is kept to preserve the numbering                                                                  |
 | 13  | Search results carry a 64 KiB total budget plus per-field caps (title 512 B, url 4 KiB, snippet 2 KiB)                                               |
 | 14  | User cancellation aborts the whole chain; it is not a provider failure                                                                               |
 | 15  | The proxy dispatcher is package-scoped; never touch undici's global dispatcher                                                                       |
@@ -86,7 +96,8 @@ Each item is load-bearing. Port them all, and add a test for each.
 ## Behaviour contract
 
 - Failure kinds: `quota` (429/402), `auth` (401/403), `transport`, `timeout`,
-  `parse`, `empty`, `config`.
+  `parse`, `empty`, `unsupported` (content type or oversized image), `config`;
+  `exhausted` marks a chain that ran out of attempts.
 - Every kind advances the chain.
 - `empty` never marks a provider as cooling down — it is query-dependent.
 - An unusable result on the **last** attempt is returned, not thrown: a short page

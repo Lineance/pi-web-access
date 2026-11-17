@@ -54,6 +54,10 @@ export function normalizeSearchResults(
     const snippet = truncateUtf8(result.snippet, Math.min(MAX_SEARCH_SNIPPET_BYTES, remaining));
     remaining -= snippet.bytes;
 
+    // A budget tail smaller than the first byte of every field would otherwise
+    // keep pushing empty entries until maxResults.
+    if (title.bytes + url.bytes + snippet.bytes === 0) break;
+
     normalized.push({ title: title.text, url: url.text, snippet: snippet.text });
   }
 

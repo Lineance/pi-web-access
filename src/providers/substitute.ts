@@ -63,10 +63,11 @@ function renderToken(token: string, values: SubstitutionValues): string | undefi
     return values.url === undefined ? undefined : encodeURIComponent(values.url);
   }
   if (token === "apiKey") {
-    // Query-parameter keys ride in the URL, so they encode like any other value.
-    // An absent key empties the slot: the vendor answers 401 and the chain moves
-    // on, instead of a literal placeholder shipping to the network.
-    return encodeURIComponent(values.apiKey ?? "");
+    // Raw, because the token also reaches JSON body fields where encoding would
+    // corrupt the key; vendor keys are URL-safe in practice, and one that is not
+    // belongs in a header. An absent key empties the slot: the vendor answers
+    // 401 and the chain moves on, instead of a literal placeholder shipping out.
+    return values.apiKey ?? "";
   }
   if (token === "urlRaw") {
     // For JSON request bodies: a body field carries the URL as data, not as part

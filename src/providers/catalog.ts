@@ -57,7 +57,7 @@ export function buildCatalog(additions: CatalogAdditions = EMPTY_ADDITIONS): Pro
     searchMeta: (name) => findSearchMeta(name) ?? additions.search.get(name)?.meta,
     searchSpec: (name) => JSON_PROVIDER_SPECS[name] ?? additions.search.get(name)?.spec,
     fetchMeta: (name) => findFetchMeta(name) ?? additions.fetch.get(name)?.meta,
-    fetchSpec: (name) => additions.fetch.get(name)?.spec,
+    fetchSpec: (name) => BUILTIN_FETCH_SPECS[name] ?? additions.fetch.get(name)?.spec,
     searchNames: () => [...searchProviderNames(), ...additions.search.keys()],
     fetchNames: () => [...fetchProviderNames(), ...additions.fetch.keys()],
   };

@@ -6,6 +6,7 @@ import {
   extractTitle,
   resolveLinks,
 } from "../../../../src/providers/fetch/local/markup.js";
+import { isHtmlMimeType } from "../../../../src/providers/fetch/local/content-kind.js";
 
 describe("extractDocument", () => {
   it("renders structure-preserving markdown", () => {
@@ -135,5 +136,11 @@ describe("resolveLinks", () => {
     const html = '<p><a href="docs.md">docs</a></p>';
 
     expect(resolveLinks(html, "not a url")).toBe('<p><a href="docs.md">docs</a></p>');
+  });
+});
+
+describe("xhtml content type", () => {
+  it("isHtmlMimeType accepts the +xml alias", () => {
+    expect(isHtmlMimeType("application/xhtml+xml")).toBe(true);
   });
 });

@@ -82,5 +82,9 @@ export function normalizeMimeType(rawHeader: string | null | undefined): string 
 }
 
 export function isHtmlMimeType(mimeType: string): boolean {
-  return mimeType === "text/html" || mimeType === "application/xhtml";
+  return (
+    mimeType === "text/html" ||
+    mimeType === "application/xhtml" ||
+    mimeType === "application/xhtml+xml"
+  );
 }

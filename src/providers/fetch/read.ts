@@ -5,6 +5,7 @@ import { WebSearchError } from "../../orchestrator/errors.js";
 import {
   charsetFromContentType,
   MAX_RESPONSE_BODY_BYTES,
+  readBytes,
   readResponseText,
 } from "../../transport/response-body.js";
 import type { Transport } from "../../transport/transport.js";
@@ -76,8 +77,8 @@ async function readImage(
   response: Response,
   mimeType: string,
 ): Promise<FetchedContent> {
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength > MAX_IMAGE_BYTES) {
+  const { bytes, truncated } = await readBytes(response, MAX_IMAGE_BYTES);
+  if (truncated) {
     throw new WebSearchError("unsupported", provider, `image too large: ${bytes.byteLength} bytes`);
   }
   return {

@@ -5,8 +5,9 @@ Web search and web fetch for the [pi](https://pi.dev) coding agent, built around
 
 Both tools share one orchestrator. A provider that fails — quota, auth, transport,
 timeout, malformed response, or an unusable result — hands off to the next one in
-line, and a provider that is known to be cooling down is demoted to the tail of
-its own tier without ever being dropped from the chain.
+line. The chain also understands cooldown: a provider marked as cooling down is
+demoted to the tail of its own tier without ever being dropped. The shipped build
+does not yet mark providers, so today the configured order always stands.
 
 ## Tools
 
@@ -24,8 +25,8 @@ its own tier without ever being dropped from the chain.
 | `url`    | yes      | Public HTTP(S) URL |
 
 Returns a text block for textual content, an image block for `image/png`,
-`image/jpeg`, `image/gif` and `image/webp`, and a content-type error for anything
-else. What textual HTML becomes — GFM markdown or the untouched body — is decided
+`image/jpeg`, `image/gif` and `image/webp` (`image/jpg` is accepted as an
+alias), and a content-type error for anything else. What textual HTML becomes — GFM markdown or the untouched body — is decided
 by the fetch provider chain, not by the call.
 
 ## Providers
@@ -156,10 +157,10 @@ parameter; a missing key empties the slot), `{baseUrl}` (taken from `baseUrls`).
 
 Rules, all enforced by name so one bad entry does not take the file down:
 
-- a name may not shadow a built-in provider on either capability — the fetch
-  side ships `firecrawl`, `jina`, `tavily`, `scrapfly`, `scrapingant`,
-  `scrapingbee`, `scraperapi` and `zenrows` as built-ins, so those names are
-  taken there too
+- a name may not shadow a built-in provider of the capability it declares for —
+  the fetch side ships `firecrawl`, `jina`, `tavily`, `scrapfly`, `scrapingant`,
+  `scrapingbee`, `scraperapi` and `zenrows`, so those names are taken there —
+  and the same custom name may not be declared for both capabilities
 - `auth` requires `keyEnv`; a custom provider reads the environment only, never
   `apiKeys`, so a key in this file can never be sent to an endpoint that did not
   ask for it
@@ -170,8 +171,8 @@ Built-in vendors use exactly this shape in code rather than living in this file:
 their field mappings follow the vendors' APIs, so a renamed field is fixed by a
 release instead of silently rotting in every copy.
 
-`/web-access-status` prints every provider, its tier, where its key comes from and
-whether it is in the active chain — without printing the key itself.
+`/web-access-status` prints the active chain — each member's tier and key source,
+never the key itself; `--all` adds the providers outside the chain.
 
 ## Notes
 
@@ -181,8 +182,9 @@ whether it is in the active chain — without printing the key itself.
   the proxy resolves names itself, so the local pre-resolution result would not
   describe the address actually contacted. Redirects are still re-checked.
 - Only `http://` and `https://` proxies work.
-- Every provider except `local` sends your URL or query to a third party.
-  Adding one to a chain is an explicit opt-in.
+- Every provider except the keyless local readers (`local`, `pandoc`, `raw`)
+  sends your URL or query to a third party. Adding one to a chain is an explicit
+  opt-in.
 
 ## Development
 

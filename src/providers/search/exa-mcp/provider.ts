@@ -8,6 +8,8 @@ import type { Transport } from "../../../transport/transport.js";
 import type { SearchResult } from "../../types.js";
 import type { SearchProvider } from "../types.js";
 
+import { packageVersion } from "../../../version.js";
+
 const MCP_URL = "https://mcp.exa.ai/mcp";
 const PROTOCOL_VERSION = "2025-03-26";
 const TOOL_NAME = "web_search_exa";
@@ -61,7 +63,7 @@ export class ExaMcpFreeProvider implements SearchProvider {
         params: {
           protocolVersion: PROTOCOL_VERSION,
           capabilities: {},
-          clientInfo: { name: "pi-web-access", version: "0.7.0" },
+          clientInfo: { name: "pi-web-access", version: packageVersion() },
         },
       },
       undefined,
@@ -158,6 +160,14 @@ export class ExaMcpFreeProvider implements SearchProvider {
       body: JSON.stringify({ jsonrpc: "2.0", method, params } satisfies JsonRpcRequest),
       ...(signal === undefined ? {} : { signal }),
     });
+    if (!response.ok) {
+      throw new WebSearchError(
+        kindForStatus(response.status),
+        this.name,
+        `Exa MCP notification error (${response.status})`,
+        response.status,
+      );
+    }
     // A notification carries no result; the body still has a hard size budget.
     await readResponseText(response, MAX_SEARCH_RESPONSE_BODY_BYTES).catch(() => "");
   }

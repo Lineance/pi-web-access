@@ -37,6 +37,12 @@ export function compileSearchProvider(name: string, raw: unknown): SearchCompile
       message: "declares both body and query; use body for POST or query for GET",
     };
   }
+  // Search providers authenticate through `auth` + `keyEnv`; a query-parameter
+  // key would silently substitute to the empty string and surface later as an
+  // inexplicable auth failure.
+  if (/\{apiKey\}/.test(JSON.stringify([source.url, source.body, source.query]))) {
+    return { ok: false, message: "uses {apiKey}; search keys go through auth + keyEnv" };
+  }
   if (source.body !== undefined && source.method === "GET") {
     return { ok: false, message: "body requires method POST" };
   }

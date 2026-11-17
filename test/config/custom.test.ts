@@ -100,4 +100,17 @@ describe("buildCatalog", () => {
     expect(catalog.fetchMeta("my-reader")?.name).toBe("my-reader");
     expect(catalog.searchMeta("my-reader")).toBeUndefined();
   });
+
+  it("keeps built-in fetch specs when custom fetch providers exist", () => {
+    // Regression: the additions branch used to consult only the custom map, so
+    // declaring any custom fetch reader disabled firecrawl, jina and the rest.
+    const catalog = buildCatalog(
+      readCustomProviders({ fetch: { "my-reader": { url: "https://r/{url}" } } }).additions,
+    );
+
+    expect(catalog.fetchSpec("firecrawl")?.textPath).toBe("data.markdown");
+    expect(catalog.fetchSpec("jina")).toBeDefined();
+    expect(catalog.fetchSpec("zenrows")).toBeDefined();
+    expect(catalog.fetchSpec("my-reader")).toBeDefined();
+  });
 });

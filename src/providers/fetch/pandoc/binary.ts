@@ -37,6 +37,9 @@ export type SpawnPandoc = (args: readonly string[]) => PandocChild;
 export const defaultSpawnPandoc: SpawnPandoc = (args) =>
   spawn("pandoc", [...args], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
 
+/** A wedged wrapper script answers within this long, or it counts as absent. */
+const PROBE_TIMEOUT_MS = 5_000;
+
 let availability: Promise<boolean> | undefined;
 
 /** Test hook: forget the cached probe so the next check spawns again. */
@@ -68,8 +71,13 @@ function probePandoc(spawnPandoc: SpawnPandoc): Promise<boolean> {
     const settle = (value: boolean) => {
       if (settled) return;
       settled = true;
+      // A wrapper script that hangs on --version must not poison the cache with
+      // a never-settling promise; the answer after the timeout is simply no.
+      clearTimeout(timer);
+      child.kill();
       resolve(value);
     };
+    const timer = setTimeout(() => settle(false), PROBE_TIMEOUT_MS);
     child.once("error", () => settle(false));
     child.once("exit", (code) => settle(code === 0));
   });
@@ -115,6 +123,14 @@ export function convertHtmlToMarkdown(
     };
     const onAbort = () => fail("pandoc conversion aborted");
 
+    // Register the abort listener before anything can settle, so an
+    // already-aborted signal cannot leave an orphaned child running.
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted === true) {
+      fail("pandoc conversion aborted");
+      return;
+    }
+
     let bytes = 0;
     const chunks: Buffer[] = [];
     let stderrTail = "";
@@ -143,8 +159,6 @@ export function convertHtmlToMarkdown(
     // A dead child closes the pipe first; the exit handler reports the failure.
     child.stdin?.on("error", () => undefined);
     child.stdin?.end(html, "utf8");
-
-    signal?.addEventListener("abort", onAbort, { once: true });
   });
 }
 

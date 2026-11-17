@@ -153,6 +153,66 @@ describe("a custom fetch provider in the chain", () => {
     textPath: "data.markdown",
   };
 
+  it("issues a manual redirect and re-validates every hop", async () => {
+    const inits: RequestInit[] = [];
+    const calls: string[] = [];
+    const transport: Transport = async (url, init) => {
+      calls.push(url);
+      inits.push(init ?? {});
+      if (calls.length === 1) {
+        return new Response(null, {
+          status: 302,
+          headers: { location: "https://reader.example.com/moved" },
+        });
+      }
+      return jsonResponse({ data: { markdown: "x".repeat(10) } });
+    };
+
+    const content = await new CustomFetchProvider(spec, transport).fetch({
+      url: "https://a.com/page",
+    });
+
+    expect(content.kind).toBe("text");
+    expect(inits[0]?.redirect).toBe("manual");
+    expect(inits[1]?.redirect).toBe("manual");
+    expect(calls[1]).toBe("https://reader.example.com/moved");
+  });
+
+  it("refuses a redirect into a private address", async () => {
+    const transport: Transport = async () =>
+      new Response(null, { status: 302, headers: { location: "http://127.0.0.1:8080/" } });
+
+    const error = await new CustomFetchProvider(spec, transport)
+      .fetch({ url: "https://a.com/page" })
+      .catch((caught: unknown) => caught);
+
+    expect((error as Error).message).toMatch(/private\/loopback/);
+  });
+
+  it("substitutes the api key into a POST body", async () => {
+    const postSpec = {
+      ...spec,
+      method: "POST" as const,
+      authHeaderName: "authorization",
+      authPrefix: "Bearer ",
+      body: { url: "{urlRaw}", key: "{apiKey}" },
+    };
+    let sentHeaders: Record<string, string> = {};
+    let sentBody = "";
+    const transport: Transport = async (_url, init) => {
+      sentHeaders = (init?.headers ?? {}) as Record<string, string>;
+      sentBody = String(init?.body ?? "");
+      return jsonResponse({ data: { markdown: "x".repeat(300) } });
+    };
+
+    await new CustomFetchProvider(postSpec, transport, "secret/1").fetch({
+      url: "https://a.com/page",
+    });
+
+    expect(JSON.parse(sentBody)).toEqual({ url: "https://a.com/page", key: "secret/1" });
+    expect(sentHeaders.authorization).toBe("Bearer secret/1");
+  });
+
   it("extracts the text at its configured path", async () => {
     const transport: Transport = async () => jsonResponse({ data: { markdown: "x".repeat(300) } });
 

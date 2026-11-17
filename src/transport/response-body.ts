@@ -15,15 +15,52 @@ export function charsetFromContentType(contentType: string | null | undefined): 
   return match?.[1]?.toLowerCase();
 }
 
-/** Read at most `maxBytes` of the body as text, decoded with `charset`. */
+/**
+ * Read at most `maxBytes` of the body as text, decoded with `charset`.
+ *
+ * The cap applies while streaming, not after: undici buffers unbounded, so a
+ * hostile server could stream gigabytes into memory before a post-hoc slice.
+ * Like the old slice, an oversized body truncates silently.
+ */
 export async function readResponseText(
   res: Response,
   maxBytes: number,
   charset?: string,
 ): Promise<string> {
-  const buffer = await res.arrayBuffer();
-  const bytes = new Uint8Array(buffer, 0, Math.min(buffer.byteLength, maxBytes));
+  const { bytes } = await readBytes(res, maxBytes);
   return decode(bytes, charset);
+}
+
+/** Stream at most `maxBytes` of the body, reporting whether the cap cut it. */
+export async function readBytes(
+  res: Response,
+  maxBytes: number,
+): Promise<{ bytes: Uint8Array; truncated: boolean }> {
+  if (!res.body) return { bytes: new Uint8Array(await res.arrayBuffer()), truncated: false };
+
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let truncated = false;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    chunks.push(value);
+    if (total > maxBytes) {
+      truncated = true;
+      await reader.cancel().catch(() => undefined);
+      break;
+    }
+  }
+  const bytes = new Uint8Array(Math.min(total, maxBytes));
+  let offset = 0;
+  for (const chunk of chunks) {
+    if (offset >= bytes.byteLength) break;
+    bytes.set(chunk.subarray(0, bytes.byteLength - offset), offset);
+    offset += chunk.byteLength;
+  }
+  return { bytes, truncated };
 }
 
 /** Read at most `maxBytes` of the body and parse it as JSON. */

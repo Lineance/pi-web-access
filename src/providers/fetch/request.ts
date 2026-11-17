@@ -1,6 +1,6 @@
 import { BROWSER_USER_AGENT } from "../../transport/http.js";
 import { MAX_REDIRECTS, parseAndAssertFetchUrl } from "../../transport/address.js";
-import { WebSearchError } from "../../orchestrator/errors.js";
+import { kindForStatus, WebSearchError } from "../../orchestrator/errors.js";
 import type { Transport } from "../../transport/transport.js";
 
 const ACCEPT =
@@ -12,18 +12,29 @@ export interface TrackedResponse {
   readonly finalUrl: string;
 }
 
+/** The request a provider wants to issue. POST bodies replay only on 307/308. */
+export interface RedirectableRequest {
+  readonly method: "GET" | "POST";
+  readonly headers: Readonly<Record<string, string>>;
+  readonly body?: string;
+}
+
 /**
  * Fetch a URL with every redirect hop re-checked before it is contacted.
  *
  * Shared by every provider that reads the URL itself: `redirect: "follow"` would
  * let a public host hand the socket to a private address with no opportunity to
- * intervene, so redirects are followed one hop at a time here.
+ * intervene, so redirects are followed one hop at a time here. The optional
+ * `request` carries a provider's own method, headers and POST body; a redirect
+ * downgrade (301/302/303) drops both, matching what fetch would do.
  */
 export async function requestWithRedirectChecks(
   provider: string,
   transport: Transport,
   url: string,
   signal?: AbortSignal,
+  request?: RedirectableRequest,
+  errorHint?: string,
 ): Promise<TrackedResponse> {
   let current = parseAndAssertFetchUrl(url).toString();
 
@@ -31,16 +42,23 @@ export async function requestWithRedirectChecks(
     const response = await transport(current, {
       ...(signal === undefined ? {} : { signal }),
       redirect: "manual",
-      headers: { "User-Agent": BROWSER_USER_AGENT, Accept: ACCEPT },
+      method: request?.method,
+      headers: {
+        "User-Agent": BROWSER_USER_AGENT,
+        Accept: ACCEPT,
+        ...(request?.headers ?? {}),
+        ...(request?.method === "POST" ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(request?.method === "POST" && request.body !== undefined ? { body: request.body } : {}),
     });
 
     if (!isRedirect(response.status)) {
       if (response.ok) return { response, finalUrl: current };
       await discardResponse(response);
       throw new WebSearchError(
-        "transport",
+        kindForStatus(response.status),
         provider,
-        `HTTP ${response.status} ${response.statusText} for ${current}`,
+        `HTTP ${response.status} ${response.statusText} for ${current}${errorHint ?? ""}`,
         response.status,
       );
     }
@@ -62,6 +80,10 @@ export async function requestWithRedirectChecks(
       );
     }
     current = parseAndAssertFetchUrl(new URL(location, current).toString()).toString();
+    // 301/302/303 downgrade a POST to GET and drop the body, matching fetch.
+    if (response.status !== 307 && response.status !== 308) {
+      request = request === undefined ? undefined : { ...request, method: "GET", body: undefined };
+    }
   }
 
   throw new WebSearchError(

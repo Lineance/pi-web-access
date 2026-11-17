@@ -1,4 +1,4 @@
-import { kindForStatus, WebSearchError } from "../../../orchestrator/errors.js";
+import { WebSearchError } from "../../../orchestrator/errors.js";
 import {
   charsetFromContentType,
   MAX_RESPONSE_BODY_BYTES,
@@ -6,6 +6,7 @@ import {
 } from "../../../transport/response-body.js";
 import type { Transport } from "../../../transport/transport.js";
 import { firstString, readDottedPath } from "../../dotted.js";
+import { requestWithRedirectChecks } from "../request.js";
 import type { FetchedContent } from "../../types.js";
 import type { FetchProvider, FetchProviderSpec, FetchRequest } from "../types.js";
 
@@ -28,9 +29,21 @@ export class CustomFetchProvider implements FetchProvider {
   }
 
   async fetch(request: FetchRequest, signal?: AbortSignal): Promise<FetchedContent> {
-    const response = await this.transport(
-      this.spec.url(request.url, this.apiKey),
-      this.init(request.url, signal),
+    const init = this.init(request.url);
+    // Every hop is validated like the keyless providers: a vendor endpoint that
+    // redirects must not hand the socket to a private address. Non-ok statuses
+    // are classified by status inside the loop, hint included.
+    const { response } = await requestWithRedirectChecks(
+      this.name,
+      this.transport,
+      init.url,
+      signal,
+      {
+        method: init.method,
+        headers: init.headers,
+        ...(init.body === undefined ? {} : { body: init.body }),
+      },
+      this.spec.errorHint,
     );
 
     const contentType = response.headers.get("content-type") ?? "";
@@ -39,15 +52,6 @@ export class CustomFetchProvider implements FetchProvider {
       MAX_RESPONSE_BODY_BYTES,
       charsetFromContentType(contentType),
     );
-
-    if (!response.ok) {
-      throw new WebSearchError(
-        kindForStatus(response.status),
-        this.name,
-        `${this.label} fetch error (${response.status})${this.spec.errorHint ?? ""}`,
-        response.status,
-      );
-    }
 
     const content = this.extract(text);
     const title = this.extractTitle(text);
@@ -63,23 +67,28 @@ export class CustomFetchProvider implements FetchProvider {
     };
   }
 
-  private init(requestUrl: string, signal: AbortSignal | undefined): RequestInit {
+  private init(requestUrl: string): {
+    url: string;
+    method: "GET" | "POST";
+    headers: Record<string, string>;
+    body?: string;
+  } {
     const headers: Record<string, string> = { ...this.spec.headers };
     const header = this.spec.authHeaderName;
     if (header !== undefined && this.apiKey !== "") {
       headers[header] = `${this.spec.authPrefix ?? ""}${this.apiKey}`;
     }
 
-    const init: RequestInit = {
+    let body: string | undefined;
+    if (this.spec.method === "POST" && this.spec.body !== undefined) {
+      body = JSON.stringify(substitute(this.spec.body, { url: requestUrl, apiKey: this.apiKey }));
+    }
+    return {
+      url: this.spec.url(requestUrl, this.apiKey),
       method: this.spec.method,
       headers,
-      ...(signal === undefined ? {} : { signal }),
+      ...(body === undefined ? {} : { body }),
     };
-    if (this.spec.method === "POST" && this.spec.body !== undefined) {
-      headers["Content-Type"] = headers["Content-Type"] ?? "application/json";
-      init.body = JSON.stringify(substitute(this.spec.body, { url: requestUrl }));
-    }
-    return init;
   }
 
   private extract(body: string): string {

@@ -90,9 +90,9 @@ describe("substitute", () => {
 });
 
 describe("apiKey placeholder", () => {
-  it("percent-encodes the key into a query slot", () => {
-    expect(substituteString("https://api/?apikey={apiKey}", { apiKey: "k/1&a" })).toBe(
-      "https://api/?apikey=k%2F1%26a",
+  it("substitutes the key raw into a query slot", () => {
+    expect(substituteString("https://api/?apikey={apiKey}", { apiKey: "abc123" })).toBe(
+      "https://api/?apikey=abc123",
     );
   });
 
