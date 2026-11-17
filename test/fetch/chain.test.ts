@@ -35,22 +35,17 @@ describe("buildFetchChain", () => {
   });
 
   it("resolves a configured pandoc provider in config order within one tier", () => {
-    expect(buildFetchChain({ fetchProviders: ["pandoc", "local"] })).toEqual([
-      "pandoc",
-      "local",
-    ]);
+    expect(buildFetchChain({ fetchProviders: ["pandoc", "local"] })).toEqual(["pandoc", "local"]);
   });
 
   it("resolves the built-in remote readers on the fetch side", () => {
-    expect(
-      buildFetchChain({ fetchProviders: ["firecrawl", "jina", "tavily", "zenrows"] }),
-    ).toEqual(["firecrawl", "jina", "tavily", "zenrows"]);
+    expect(buildFetchChain({ fetchProviders: ["firecrawl", "jina", "tavily", "zenrows"] })).toEqual(
+      ["firecrawl", "jina", "tavily", "zenrows"],
+    );
   });
 
   it("refuses an unknown fetch provider", () => {
-    const error = captureChainError(() =>
-      buildFetchChain({ fetchProviders: ["nope"] }),
-    );
+    const error = captureChainError(() => buildFetchChain({ fetchProviders: ["nope"] }));
 
     expect(error).toBeInstanceOf(WebSearchError);
     expect((error as WebSearchError).kind).toBe("config");
@@ -58,9 +53,7 @@ describe("buildFetchChain", () => {
   });
 
   it("refuses a provider that cannot fetch", () => {
-    const error = captureChainError(() =>
-      buildFetchChain({ fetchProviders: ["bing"] }),
-    );
+    const error = captureChainError(() => buildFetchChain({ fetchProviders: ["bing"] }));
 
     expect((error as WebSearchError).kind).toBe("config");
     expect((error as WebSearchError).message).toContain("does not support fetch");
@@ -68,10 +61,7 @@ describe("buildFetchChain", () => {
 
   it("demotes a cooled provider inside its tier", () => {
     expect(
-      buildFetchChain(
-        { fetchProviders: ["local"] },
-        { health: healthMarking(["local"]) },
-      ),
+      buildFetchChain({ fetchProviders: ["local"] }, { health: healthMarking(["local"]) }),
     ).toEqual(["local"]);
   });
 });

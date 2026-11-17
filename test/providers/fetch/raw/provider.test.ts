@@ -56,9 +56,9 @@ describe("RawFetchProvider", () => {
   it("refuses unsupported content types like any other provider", async () => {
     const { fetch } = provider([{ headers: { "content-type": "application/pdf" }, body: "%PDF" }]);
 
-    const error = await fetch.fetch({ url: "https://example.com/a.pdf" }).catch(
-      (caught: unknown) => caught,
-    );
+    const error = await fetch
+      .fetch({ url: "https://example.com/a.pdf" })
+      .catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(WebSearchError);
     expect((error as WebSearchError).kind).toBe("unsupported");

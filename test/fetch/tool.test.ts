@@ -7,7 +7,10 @@ import type { Transport } from "../../src/transport/transport.js";
 
 import { captureApi, textOf, tool, type RegisteredTool } from "../harness.js";
 
-function setup(transport: Transport, config: WebConfig = { fetchProviders: ["local"] }): {
+function setup(
+  transport: Transport,
+  config: WebConfig = { fetchProviders: ["local"] },
+): {
   definition: RegisteredTool;
 } {
   const { api, tools } = captureApi();

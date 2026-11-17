@@ -48,7 +48,8 @@ export class PandocFetchProvider implements FetchProvider {
       transport: this.transport,
       url: request.url,
       signal,
-      render: (html, finalUrl) => convertHtmlToMarkdown(resolveLinks(html, finalUrl), this.spawnPandoc, signal),
+      render: (html, finalUrl) =>
+        convertHtmlToMarkdown(resolveLinks(html, finalUrl), this.spawnPandoc, signal),
     });
   }
 }

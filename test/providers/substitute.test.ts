@@ -27,7 +27,9 @@ describe("substituteString", () => {
   });
 
   it("keeps a raw url placeholder untouched for JSON body fields", () => {
-    expect(substituteString("{urlRaw}", { url: "https://a.com/b?c=1" })).toBe("https://a.com/b?c=1");
+    expect(substituteString("{urlRaw}", { url: "https://a.com/b?c=1" })).toBe(
+      "https://a.com/b?c=1",
+    );
     expect(substitute({ url: "{urlRaw}" }, { url: "https://a.com/b?c=1" })).toEqual({
       url: "https://a.com/b?c=1",
     });

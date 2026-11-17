@@ -78,11 +78,7 @@ async function readImage(
 ): Promise<FetchedContent> {
   const bytes = new Uint8Array(await response.arrayBuffer());
   if (bytes.byteLength > MAX_IMAGE_BYTES) {
-    throw new WebSearchError(
-      "unsupported",
-      provider,
-      `image too large: ${bytes.byteLength} bytes`,
-    );
+    throw new WebSearchError("unsupported", provider, `image too large: ${bytes.byteLength} bytes`);
   }
   return {
     kind: "image",

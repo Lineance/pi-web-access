@@ -18,14 +18,13 @@ describe("extractDocument", () => {
   });
 
   it("keeps the document title out of the body", () => {
-    expect(extractDocument("<html><head><title>Doc</title></head><body><p>x</p></body></html>")).toBe(
-      "x",
-    );
+    expect(
+      extractDocument("<html><head><title>Doc</title></head><body><p>x</p></body></html>"),
+    ).toBe("x");
   });
 
   it("drops site chrome before conversion", () => {
-    const html =
-      `<html><body><nav>Menu</nav><script>bad()</script><article><p>${"word ".repeat(60)}</p></article><footer>foot</footer></body></html>`;
+    const html = `<html><body><nav>Menu</nav><script>bad()</script><article><p>${"word ".repeat(60)}</p></article><footer>foot</footer></body></html>`;
 
     const text = extractDocument(html);
     expect(text).toContain("word word word");
@@ -35,8 +34,7 @@ describe("extractDocument", () => {
   });
 
   it("prefers a substantial main container over the body", () => {
-    const html =
-      `<html><body><aside>sidebar text</aside><main><p>${"word ".repeat(60)}</p></main><p>outside the main element</p></body></html>`;
+    const html = `<html><body><aside>sidebar text</aside><main><p>${"word ".repeat(60)}</p></main><p>outside the main element</p></body></html>`;
 
     const text = extractDocument(html);
     expect(text).toContain("word word word");

@@ -93,7 +93,9 @@ export function convertHtmlToMarkdown(
     try {
       child = spawnPandoc(PANDOC_ARGS);
     } catch (error) {
-      reject(new WebSearchError("transport", "pandoc", `pandoc failed to start: ${messageOf(error)}`));
+      reject(
+        new WebSearchError("transport", "pandoc", `pandoc failed to start: ${messageOf(error)}`),
+      );
       return;
     }
 

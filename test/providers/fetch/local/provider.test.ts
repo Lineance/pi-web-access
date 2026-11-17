@@ -247,7 +247,6 @@ describe("LocalFetchProvider", () => {
 
       await new LocalFetchProvider({ transport }).fetch({
         url: "https://example.com/",
-        
       });
 
       const init = seen[0];
