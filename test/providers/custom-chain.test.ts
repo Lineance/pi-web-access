@@ -158,7 +158,6 @@ describe("a custom fetch provider in the chain", () => {
 
     const content = await new CustomFetchProvider(spec, transport).fetch({
       url: "https://a.com/page",
-      raw: false,
     });
 
     expect(content.kind).toBe("text");
@@ -169,7 +168,7 @@ describe("a custom fetch provider in the chain", () => {
     const transport: Transport = async () => jsonResponse({ data: {} });
 
     const error = await new CustomFetchProvider(spec, transport)
-      .fetch({ url: "https://a.com/page", raw: false })
+      .fetch({ url: "https://a.com/page" })
       .catch((caught: unknown) => caught);
 
     expect((error as WebSearchError).kind).toBe("parse");
@@ -179,7 +178,7 @@ describe("a custom fetch provider in the chain", () => {
     const transport: Transport = async () => jsonResponse({}, 429);
 
     const error = await new CustomFetchProvider(spec, transport)
-      .fetch({ url: "https://a.com/page", raw: false })
+      .fetch({ url: "https://a.com/page" })
       .catch((caught: unknown) => caught);
 
     expect((error as WebSearchError).kind).toBe("quota");
@@ -196,7 +195,6 @@ describe("a custom fetch provider in the chain", () => {
     const transport: Transport = async () => jsonResponse({ text: "y".repeat(400) });
 
     const outcome = await fetchWithChain("https://a.com/page", config, {
-      raw: false,
       transport,
       catalog,
     });

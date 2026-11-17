@@ -27,16 +27,23 @@ const captureChainError = (run: () => unknown): unknown => {
 
 describe("buildFetchChain", () => {
   it("falls back to the local default", () => {
-    expect(buildFetchChain({}, { raw: false })).toEqual(["local"]);
+    expect(buildFetchChain({})).toEqual(["local"]);
   });
 
-  it("forces the local provider when raw markup is requested", () => {
-    expect(buildFetchChain({ fetchProviders: ["local"] }, { raw: true })).toEqual(["local"]);
+  it("resolves a configured raw provider like any other", () => {
+    expect(buildFetchChain({ fetchProviders: ["raw", "local"] })).toEqual(["raw", "local"]);
+  });
+
+  it("resolves a configured pandoc provider in config order within one tier", () => {
+    expect(buildFetchChain({ fetchProviders: ["pandoc", "local"] })).toEqual([
+      "pandoc",
+      "local",
+    ]);
   });
 
   it("refuses an unknown fetch provider", () => {
     const error = captureChainError(() =>
-      buildFetchChain({ fetchProviders: ["nope"] }, { raw: false }),
+      buildFetchChain({ fetchProviders: ["nope"] }),
     );
 
     expect(error).toBeInstanceOf(WebSearchError);
@@ -46,7 +53,7 @@ describe("buildFetchChain", () => {
 
   it("refuses a provider that cannot fetch", () => {
     const error = captureChainError(() =>
-      buildFetchChain({ fetchProviders: ["bing"] }, { raw: false }),
+      buildFetchChain({ fetchProviders: ["bing"] }),
     );
 
     expect((error as WebSearchError).kind).toBe("config");
@@ -57,7 +64,7 @@ describe("buildFetchChain", () => {
     expect(
       buildFetchChain(
         { fetchProviders: ["local"] },
-        { raw: false, health: healthMarking(["local"]) },
+        { health: healthMarking(["local"]) },
       ),
     ).toEqual(["local"]);
   });
@@ -71,7 +78,6 @@ describe("fetchWithChain", () => {
       "https://example.com/",
       {},
       {
-        raw: false,
         transport: htmlTransport(body),
       },
     );
@@ -81,18 +87,18 @@ describe("fetchWithChain", () => {
     expect(outcome.value.kind === "text" && outcome.value.title).toBe("Doc");
   });
 
-  it("returns raw markup when asked", async () => {
+  it("returns untouched markup when the raw provider serves the chain", async () => {
     const body = `<html><body><p>${"x".repeat(MIN_USEFUL_TEXT_CHARS + 50)}</p></body></html>`;
 
     const outcome = await fetchWithChain(
       "https://example.com/",
-      {},
+      { fetchProviders: ["raw"] },
       {
-        raw: true,
         transport: htmlTransport(body),
       },
     );
 
+    expect(outcome.backend).toBe("raw");
     expect(outcome.value.kind === "text" && outcome.value.text).toBe(body);
   });
 
@@ -101,7 +107,6 @@ describe("fetchWithChain", () => {
       "https://example.com/",
       {},
       {
-        raw: false,
         transport: htmlTransport("<html><body><p>tiny</p></body></html>"),
       },
     );
@@ -118,7 +123,6 @@ describe("fetchWithChain", () => {
       "https://example.com/a.pdf",
       {},
       {
-        raw: false,
         transport,
       },
     ).catch((caught: unknown) => caught);
@@ -132,7 +136,6 @@ describe("fetchWithChain", () => {
       "https://example.com/",
       {},
       {
-        raw: false,
         transport: htmlTransport(`<html><body>${"x".repeat(400)}</body></html>`),
       },
     );

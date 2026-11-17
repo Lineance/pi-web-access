@@ -4,107 +4,81 @@ import {
   decodeEntities,
   extractDocument,
   extractTitle,
-  htmlToText,
 } from "../../../../src/providers/fetch/local/markup.js";
 
 describe("extractDocument", () => {
-  it("returns the body text and the title together", () => {
-    const document = extractDocument(
-      "<html><head><title>Doc</title><style>.a{}</style></head><body><h1>Hi</h1><p>body</p></body></html>",
-    );
-
-    expect(document).toEqual({ text: "Hi\nbody", title: "Doc" });
-  });
-
-  it("omits the title key when the page declares none", () => {
-    expect(extractDocument("<p>only text</p>")).toEqual({ text: "only text" });
-  });
-});
-
-describe("htmlToText", () => {
-  it("returns an empty string for empty input", () => {
-    expect(htmlToText("")).toBe("");
-  });
-
-  it("drops script, style and noscript bodies", () => {
+  it("renders structure-preserving markdown", () => {
     const html =
-      "<p>keep</p><script>var secret = 1;</script><style>.a{color:red}</style><noscript>no js</noscript>";
+      '<html><head><title>Doc</title><style>.a{}</style></head><body><h2>Install</h2><ol><li>Clone</li><li>npm install</li></ol><p>see <a href="docs.md">docs</a></p></body></html>';
 
-    const text = htmlToText(html);
-
-    expect(text).toBe("keep");
-    expect(text).not.toContain("secret");
-    expect(text).not.toContain("color:red");
-    expect(text).not.toContain("no js");
+    expect(extractDocument(html, "https://example.com/guide/index.html")).toBe(
+      "## Install\n\n1.  Clone\n2.  npm install\n\nsee [docs](https://example.com/guide/docs.md)",
+    );
   });
 
-  it("drops the title from the body, since it is reported separately", () => {
-    expect(htmlToText("<head><title>Doc</title></head><body><p>body</p></body>")).toBe("body");
+  it("keeps the document title out of the body", () => {
+    expect(extractDocument("<html><head><title>Doc</title></head><body><p>x</p></body></html>")).toBe(
+      "x",
+    );
   });
 
-  it("drops comments without inventing whitespace", () => {
-    // A comment is zero-width in a browser, so the two halves join: "ab", not "a b".
-    expect(htmlToText("<p>a<!-- hidden -->b</p>")).toBe("ab");
+  it("drops site chrome before conversion", () => {
+    const html =
+      `<html><body><nav>Menu</nav><script>bad()</script><article><p>${"word ".repeat(60)}</p></article><footer>foot</footer></body></html>`;
+
+    const text = extractDocument(html);
+    expect(text).toContain("word word word");
+    expect(text).not.toContain("Menu");
+    expect(text).not.toContain("bad()");
+    expect(text).not.toContain("foot");
   });
 
-  it("turns block-level tags into line breaks", () => {
-    expect(htmlToText("<h1>Title</h1><p>one</p><p>two</p>")).toBe("Title\none\ntwo");
+  it("prefers a substantial main container over the body", () => {
+    const html =
+      `<html><body><aside>sidebar text</aside><main><p>${"word ".repeat(60)}</p></main><p>outside the main element</p></body></html>`;
+
+    const text = extractDocument(html);
+    expect(text).toContain("word word word");
+    expect(text).not.toContain("sidebar text");
+    expect(text).not.toContain("outside the main element");
   });
 
-  it("turns <br> into a line break", () => {
-    expect(htmlToText("a<br>b<br/>c")).toBe("a\nb\nc");
+  it("falls back to the body when the container is too short", () => {
+    const html = "<html><body><main>teaser</main><p>the rest of the page</p></body></html>";
+
+    expect(extractDocument(html)).toBe("teaser\n\nthe rest of the page");
   });
 
-  it("keeps the text of list items on separate lines", () => {
-    expect(htmlToText("<ul><li>a</li><li>b</li></ul>")).toBe("a\nb");
+  it("renders GFM tables and preserves code block whitespace", () => {
+    const html =
+      "<html><body><table><tr><th>cmd</th><th>act</th></tr><tr><td>make</td><td>build</td></tr></table><pre><code>npm run a\n  indented  keep</code></pre></body></html>";
+
+    expect(extractDocument(html)).toBe(
+      "| cmd | act |\n| --- | --- |\n| make | build |\n\n```\nnpm run a\n  indented  keep\n```",
+    );
   });
 
-  it("strips tags whose attributes contain a closing angle bracket", () => {
-    const html = '<a href="https://example.com" data-x="a>b">link</a>';
+  it("resolves relative link and image targets against the final URL", () => {
+    const html =
+      '<html><body><p><a href="/docs.md">abs root</a> <a href="../up.md">up</a> <a href="#top">top</a> <a href="https://other.net/x">ext</a> <img src="/i.png" alt="pic"></p></body></html>';
 
-    expect(htmlToText(html)).toBe("link");
+    expect(extractDocument(html, "https://example.com/a/b/c.html")).toBe(
+      "[abs root](https://example.com/docs.md) [up](https://example.com/a/up.md) [top](#top) [ext](https://other.net/x) ![pic](https://example.com/i.png)",
+    );
   });
 
-  it("decodes numeric and hex entities", () => {
-    expect(htmlToText("<p>&#65;&#x42;</p>")).toBe("AB");
-  });
-
-  it("decodes named entities", () => {
-    expect(htmlToText("<p>a &amp; b &lt;c&gt; &hellip;</p>")).toBe("a & b <c> …");
-  });
-
-  it("leaves unknown entities alone instead of mangling them", () => {
-    expect(htmlToText("<p>&notarealentity; &amp;</p>")).toBe("&notarealentity; &");
-  });
-
-  it("does not treat an escaped tag as markup", () => {
-    expect(htmlToText("<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>")).toBe(
+  it("keeps an escaped tag as literal text", () => {
+    expect(extractDocument("<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>")).toBe(
       "<script>alert(1)</script>",
     );
   });
 
-  it("refuses to build invalid unicode from an out-of-range code point", () => {
-    expect(htmlToText("<p>&#1114112;x</p>")).toBe("&#1114112;x");
+  it("survives malformed markup", () => {
+    expect(extractDocument("<p>unclosed <b>bold <i>both")).toBe("unclosed **bold *both***");
   });
 
-  it("refuses lone surrogates", () => {
-    expect(htmlToText("<p>&#xD800;</p>")).toBe("&#xD800;");
-  });
-
-  it("collapses horizontal whitespace and non-breaking spaces", () => {
-    expect(htmlToText("<p>a   b&nbsp;&nbsp;c</p>")).toBe("a b c");
-  });
-
-  it("collapses adjacent block boundaries into a single newline", () => {
-    expect(htmlToText("<p>a</p><div></div><div></div><p>b</p>")).toBe("a\nb");
-  });
-
-  it("does not preserve source-level blank lines", () => {
-    expect(htmlToText("<p>a</p>\n\n\n<p>b</p>")).toBe("a\nb");
-  });
-
-  it("normalises CRLF line endings", () => {
-    expect(htmlToText("<p>a\r\nb</p>")).toBe("a\nb");
+  it("returns an empty string for an empty body", () => {
+    expect(extractDocument("<html><body></body></html>")).toBe("");
   });
 });
 
@@ -137,5 +111,13 @@ describe("decodeEntities", () => {
 
   it("decodes repeatedly distinct entities in one pass", () => {
     expect(decodeEntities("&#60;&#62;")).toBe("<>");
+  });
+
+  it("refuses to build invalid unicode from an out-of-range code point", () => {
+    expect(decodeEntities("&#1114112;x")).toBe("&#1114112;x");
+  });
+
+  it("refuses lone surrogates", () => {
+    expect(decodeEntities("&#xD800;")).toBe("&#xD800;");
   });
 });

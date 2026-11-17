@@ -22,7 +22,6 @@ export const FETCH_MIN_ATTEMPT_MS = 5_000;
 export const MIN_USEFUL_TEXT_CHARS = 200;
 
 export interface FetchChainOptions {
-  readonly raw: boolean;
   readonly transport: Transport;
   readonly catalog?: ProviderCatalog;
   readonly health?: ChainHealth;
@@ -30,13 +29,17 @@ export interface FetchChainOptions {
   readonly onAttempt?: (provider: string, label: string) => void;
 }
 
-/** Raw markup can only come from the local provider; remote readers cannot. */
+/**
+ * The fetch chain follows the config alone; there is no per-call override.
+ *
+ * Original markup is a provider (`raw`) like markdown is (`local`, `pandoc`), so
+ * choosing what the model sees is a chain decision, ordered by tier and cooled
+ * like every other attempt.
+ */
 export function buildFetchChain(
   config: WebConfig,
-  options: { raw: boolean; health?: ChainHealth; catalog?: ProviderCatalog },
+  options: { health?: ChainHealth; catalog?: ProviderCatalog } = {},
 ): string[] {
-  if (options.raw) return ["local"];
-
   const catalog = options.catalog ?? BUILTIN_CATALOG;
   const usable: string[] = [];
   for (const name of getChain(config, "fetch")) {
@@ -63,7 +66,6 @@ export async function fetchWithChain(
 ): Promise<ChainOutcome<FetchedContent>> {
   const catalog = options.catalog ?? BUILTIN_CATALOG;
   const names = buildFetchChain(config, {
-    raw: options.raw,
     ...(options.health ? { health: options.health } : {}),
     catalog,
   });
@@ -78,7 +80,7 @@ export async function fetchWithChain(
     return {
       provider: name,
       label: provider.label,
-      run: (signal) => provider.fetch({ url, raw: options.raw }, signal),
+      run: (signal) => provider.fetch({ url }, signal),
     };
   });
 

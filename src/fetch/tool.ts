@@ -25,14 +25,12 @@ export function registerWebFetchTool(pi: ExtensionAPI, deps: FetchToolDeps): voi
   pi.registerTool({
     name: "web_fetch",
     label: "Web Fetch",
-    description: "Fetch one public HTTP(S) URL as text, raw HTML (raw=true), or an image.",
+    description: "Fetch one public HTTP(S) URL as text, raw HTML, or an image.",
     parameters: Type.Object({
       url: Type.String(),
-      raw: Type.Optional(Type.Boolean({ description: "Return raw HTML.", default: false })),
     }),
 
     async execute(_toolCallId, params, signal, onUpdate) {
-      const raw = params.raw === true;
       // Fails fast on a non-http(s) or credential-bearing URL before any provider
       // is instantiated.
       parseAndAssertFetchUrl(params.url);
@@ -46,7 +44,6 @@ export function registerWebFetchTool(pi: ExtensionAPI, deps: FetchToolDeps): voi
       // chain takes effect without restarting pi.
       const config = (deps.loadConfig ?? readConfigValue)();
       const outcome = await fetchWithChain(params.url, config, {
-        raw,
         transport: deps.transport,
         ...(deps.catalog ? { catalog: deps.catalog } : {}),
         ...(deps.health ? { health: deps.health } : {}),

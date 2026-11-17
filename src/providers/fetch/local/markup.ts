@@ -1,15 +1,8 @@
-const COMMENT_BLOCK = /<!--[\s\S]*?-->/g;
-const SCRIPT_BLOCK = /<script\b[\s\S]*?<\/script\s*>/gi;
-const STYLE_BLOCK = /<style\b[\s\S]*?<\/style\s*>/gi;
-const NOSCRIPT_BLOCK = /<noscript\b[\s\S]*?<\/noscript\s*>/gi;
-const TITLE_BLOCK = /<title\b[\s\S]*?<\/title\s*>/gi;
+import { createDocument, type DominoDocument, type DominoElement } from "@mixmark-io/domino";
+import TurndownService from "turndown";
+import gfmPlugin from "turndown-plugin-gfm";
+
 const TITLE_TAG = /<title\b[^>]*>([\s\S]*?)<\/title\s*>/i;
-
-/** Tags that imply a line break in rendered output. */
-const BLOCK_BOUNDARY =
-  /<\/?(?:address|article|aside|blockquote|br|dd|details|div|dl|dt|fieldset|figcaption|figure|footer|form|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|summary|table|tbody|td|tfoot|th|thead|tr|ul)\b[^>]*>/gi;
-
-/** An attribute value may contain `>`, so quoted spans are skipped whole. */
 const ANY_TAG = /<(?:[^>"']|"[^"]*"|'[^']*')*>/g;
 
 const NUMERIC_ENTITY = /&#(\d{1,7});/g;
@@ -61,57 +54,79 @@ const NAMED_ENTITIES: Readonly<Record<string, string>> = {
   shy: "\u00ad",
 };
 
-/** A whole page reduced to what a reader would see, plus its declared title. */
-export interface ExtractedDocument {
-  text: string;
-  title?: string;
+/** Site chrome that never carries document content. */
+const NOISE_SELECTOR =
+  "script, style, noscript, template, iframe, svg, canvas, nav, footer, aside, dialog, form, button, input, select, textarea";
+
+/**
+ * A candidate content container must hold at least this much text to displace
+ * `<body>`, so a teaser-length `<article>` cannot shadow the rest of the page.
+ */
+const MIN_MAIN_TEXT_CHARS = 200;
+
+/** One shared converter: constructing it is not free and rules never change. */
+const turndown = new TurndownService({
+  headingStyle: "atx",
+  codeBlockStyle: "fenced",
+  bulletListMarker: "-",
+  hr: "---",
+  emDelimiter: "*",
+  strongDelimiter: "**",
+});
+turndown.use(gfmPlugin.gfm);
+
+/**
+ * Document conversion for the local fetch provider.
+ *
+ * A real DOM parse replaces the old regex flattening: headings keep their level,
+ * lists keep their markers and numbering, tables become GFM tables, code blocks
+ * keep their whitespace, and links keep their targets. Script, style and site
+ * chrome are dropped before conversion; relative links resolve against the URL
+ * the response actually came from, because a markdown link to `/next` is half a
+ * link for a model that may want to follow it.
+ */
+export function extractDocument(html: string, baseUrl?: string): string {
+  const document = createDocument(html);
+  for (const element of Array.from(document.querySelectorAll(NOISE_SELECTOR))) element.remove();
+  const root = contentRoot(document);
+  if (baseUrl !== undefined) absolutizeUrls(root, baseUrl);
+  return turndown.turndown(root as unknown as Parameters<TurndownService["turndown"]>[0]);
 }
 
 /**
- * Document extraction for the local fetch provider.
+ * The narrowest container that actually holds the content.
  *
- * Owned here rather than shared: the block-level rules below are a policy of this
- * provider (drop script/style/title, one line per block, no blank lines). A second
- * consumer with a different input domain gets its own cleaner instead of inheriting
- * these choices.
+ * `<main>`, `<article>` and `[role="main"]` are tried in document order; each
+ * candidate must clear `MIN_MAIN_TEXT_CHARS`, and `<body>` is the floor. A page
+ * with no container, or only containers below the floor, converts in full.
  */
-export function extractDocument(html: string): ExtractedDocument {
-  const title = extractTitle(html);
-  return { text: htmlToText(html), ...(title === undefined ? {} : { title }) };
+function contentRoot(document: DominoDocument): DominoElement {
+  for (const element of Array.from(document.querySelectorAll("main, article, [role='main']"))) {
+    if (element.textContent.trim().length >= MIN_MAIN_TEXT_CHARS) return element;
+  }
+  return document.body;
 }
 
-/**
- * Strip markup down to readable text.
- *
- * Entities are decoded after tags are removed, so an escaped `&lt;b&gt;` in the
- * source stays literal text instead of becoming a tag that then disappears.
- *
- * Every block boundary collapses to a single newline: blank lines are not
- * preserved. Paragraph spacing is worth fewer tokens than it costs here, and a
- * source-level blank line is indistinguishable from the gap between two block
- * tags once the markup is gone.
- *
- * The `<title>` element is dropped from the body; use `extractTitle` for it. Left
- * in, it would be duplicated at the top of every page body.
- */
-export function htmlToText(html: string): string {
-  if (!html) return "";
+/** Resolve relative link and image targets so the markdown stands alone. */
+function absolutizeUrls(root: DominoElement, baseUrl: string): void {
+  let base: URL;
+  try {
+    base = new URL(baseUrl);
+  } catch {
+    return;
+  }
 
-  const stripped = html
-    .replace(COMMENT_BLOCK, "")
-    .replace(SCRIPT_BLOCK, "")
-    .replace(STYLE_BLOCK, "")
-    .replace(NOSCRIPT_BLOCK, "")
-    .replace(TITLE_BLOCK, "")
-    .replace(BLOCK_BOUNDARY, "\n")
-    .replace(ANY_TAG, "");
-
-  return decodeEntities(stripped)
-    .replace(/\r\n?/g, "\n")
-    .replace(/[ \t\f\v\u00a0]+/g, " ")
-    .replace(/ *\n */g, "\n")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
+  for (const element of Array.from(root.querySelectorAll("a[href], img[src]"))) {
+    const attribute = element.tagName === "A" ? "href" : "src";
+    const value = element.getAttribute(attribute);
+    // A fragment refers into this same document; leave it as the author wrote it.
+    if (value === null || value === "" || value.startsWith("#")) continue;
+    try {
+      element.setAttribute(attribute, new URL(value, base).href);
+    } catch {
+      // An unresolvable target is passed through untouched.
+    }
+  }
 }
 
 /** The document title, if the markup declares a non-empty one. */

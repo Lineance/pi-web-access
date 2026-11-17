@@ -2,8 +2,6 @@ import type { FetchedContent } from "../types.js";
 
 export interface FetchRequest {
   readonly url: string;
-  /** Return markup unchanged instead of extracted text. */
-  readonly raw: boolean;
 }
 
 export interface FetchProvider {

@@ -19,10 +19,11 @@ export function formatStatus(snapshot: StatusSnapshot, options: FormatOptions = 
   const lines: string[] = [];
   const all = options.all === true;
 
+  // No blank separators: pi caps a widget at ten lines, and with the built-in
+  // roster grown the default view needs every line it can keep. Each section is
+  // self-labelled, so nothing is ambiguous without the gaps.
   lines.push(...section("search", snapshot.searchChain, snapshot.providers, "search", all));
-  lines.push("");
   lines.push(...section("fetch", snapshot.fetchChain, snapshot.providers, "fetch", all));
-  lines.push("");
   lines.push(...configLines(snapshot));
 
   for (const problem of snapshot.chainProblems) {

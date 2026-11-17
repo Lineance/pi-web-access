@@ -7,9 +7,9 @@ import type { Transport } from "../../src/transport/transport.js";
 
 import { captureApi, textOf, tool, type RegisteredTool } from "../harness.js";
 
-const config: WebConfig = { fetchProviders: ["local"] };
-
-function setup(transport: Transport): { definition: RegisteredTool } {
+function setup(transport: Transport, config: WebConfig = { fetchProviders: ["local"] }): {
+  definition: RegisteredTool;
+} {
   const { api, tools } = captureApi();
   registerWebFetchTool(api, { config, transport, loadConfig: () => config });
   return { definition: tool(tools, "web_fetch") };
@@ -57,18 +57,19 @@ describe("web_fetch content routing", () => {
     expect(output.details["backend"]).toBe("local");
   });
 
-  it("returns raw markup when raw is set", async () => {
+  it("returns untouched markup when the raw provider serves the chain", async () => {
     const markup = `<html><body><p>${longParagraph}</p></body></html>`;
-    const { definition } = setup(responding(markup, "text/html"));
+    const { definition } = setup(responding(markup, "text/html"), { fetchProviders: ["raw"] });
 
     const output = await definition.execute(
       "id",
-      { url: "https://example.com/page", raw: true },
+      { url: "https://example.com/page" },
       undefined,
       undefined,
     );
 
     expect(textOf(output)).toContain(markup);
+    expect(output.details["backend"]).toBe("raw");
   });
 
   it("returns an image block with a one-line caption for a renderable image", async () => {

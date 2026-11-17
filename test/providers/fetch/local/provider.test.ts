@@ -47,12 +47,12 @@ describe("LocalFetchProvider", () => {
     it("returns a plain text body unchanged", async () => {
       const { fetch } = provider([{ headers: { "content-type": "text/plain" }, body: "hello" }]);
 
-      const content = await fetch.fetch({ url: "https://example.com/a.txt", raw: false });
+      const content = await fetch.fetch({ url: "https://example.com/a.txt" });
 
       expect(content).toMatchObject({ kind: "text", text: "hello" });
     });
 
-    it("extracts readable text and the title from HTML", async () => {
+    it("renders HTML as markdown and keeps the title", async () => {
       const { fetch } = provider([
         {
           headers: { "content-type": "text/html; charset=utf-8" },
@@ -60,19 +60,26 @@ describe("LocalFetchProvider", () => {
         },
       ]);
 
-      const content = await fetch.fetch({ url: "https://example.com/", raw: false });
+      const content = await fetch.fetch({ url: "https://example.com/" });
 
       expect(content).toMatchObject({ kind: "text", title: "Doc" });
-      expect(content.kind === "text" && content.text).toBe("Hi\nbody");
+      expect(content.kind === "text" && content.text).toBe("# Hi\n\nbody");
     });
 
-    it("returns markup untouched when raw is requested", async () => {
-      const markup = "<html><body><h1>Hi</h1></body></html>";
-      const { fetch } = provider([{ headers: { "content-type": "text/html" }, body: markup }]);
+    it("resolves relative links against the final redirect URL", async () => {
+      const { fetch } = provider([
+        { status: 302, headers: { location: "https://example.com/final/" } },
+        {
+          headers: { "content-type": "text/html" },
+          body: '<html><body><p><a href="next.md">next</a></p></body></html>',
+        },
+      ]);
 
-      const content = await fetch.fetch({ url: "https://example.com/", raw: true });
+      const content = await fetch.fetch({ url: "https://example.com/start" });
 
-      expect(content.kind === "text" && content.text).toBe(markup);
+      expect(content.kind === "text" && content.text).toContain(
+        "[next](https://example.com/final/next.md)",
+      );
     });
 
     it("decodes using the charset declared by the response", async () => {
@@ -82,7 +89,7 @@ describe("LocalFetchProvider", () => {
         { headers: { "content-type": "text/plain; charset=gbk" }, body: gbk },
       ]);
 
-      const content = await fetch.fetch({ url: "https://example.com/gbk", raw: false });
+      const content = await fetch.fetch({ url: "https://example.com/gbk" });
 
       expect(content.kind === "text" && content.text).toBe("中文");
     });
@@ -92,7 +99,7 @@ describe("LocalFetchProvider", () => {
         { headers: { "content-type": "text/plain", "content-length": "5" }, body: "hello" },
       ]);
 
-      const content = await fetch.fetch({ url: "https://example.com/a.txt", raw: false });
+      const content = await fetch.fetch({ url: "https://example.com/a.txt" });
 
       expect(content.kind === "text" && content.contentLength).toBe(5);
     });
@@ -103,7 +110,7 @@ describe("LocalFetchProvider", () => {
       const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
       const { fetch } = provider([{ headers: { "content-type": "image/png" }, body: bytes }]);
 
-      const content = await fetch.fetch({ url: "https://example.com/a.png", raw: false });
+      const content = await fetch.fetch({ url: "https://example.com/a.png" });
 
       expect(content).toMatchObject({
         kind: "image",
@@ -117,7 +124,7 @@ describe("LocalFetchProvider", () => {
       const huge = new Uint8Array(5 * 1024 * 1024 + 1);
       const { fetch } = provider([{ headers: { "content-type": "image/png" }, body: huge }]);
 
-      await expect(fetch.fetch({ url: "https://example.com/big.png", raw: false })).rejects.toThrow(
+      await expect(fetch.fetch({ url: "https://example.com/big.png" })).rejects.toThrow(
         /image too large/,
       );
     });
@@ -130,7 +137,7 @@ describe("LocalFetchProvider", () => {
       ]);
 
       const error = await fetch
-        .fetch({ url: "https://example.com/a.pdf", raw: false })
+        .fetch({ url: "https://example.com/a.pdf" })
         .catch((caught: unknown) => caught);
 
       expect(error).toBeInstanceOf(WebSearchError);
@@ -146,7 +153,7 @@ describe("LocalFetchProvider", () => {
         },
       ]);
 
-      const content = await fetch.fetch({ url: "https://example.com/a.svg", raw: false });
+      const content = await fetch.fetch({ url: "https://example.com/a.svg" });
 
       expect(content.kind).toBe("text");
     });
@@ -159,7 +166,7 @@ describe("LocalFetchProvider", () => {
         { headers: { "content-type": "text/plain" }, body: "arrived" },
       ]);
 
-      const content = await fetch.fetch({ url: "https://example.com/start", raw: false });
+      const content = await fetch.fetch({ url: "https://example.com/start" });
 
       expect(content.kind === "text" && content.text).toBe("arrived");
       expect(calls).toEqual(["https://example.com/start", "https://example.com/final"]);
@@ -171,7 +178,7 @@ describe("LocalFetchProvider", () => {
         { headers: { "content-type": "text/plain" }, body: "ok" },
       ]);
 
-      await fetch.fetch({ url: "https://example.com/a/b", raw: false });
+      await fetch.fetch({ url: "https://example.com/a/b" });
 
       expect(calls[1]).toBe("https://example.com/next");
     });
@@ -181,7 +188,7 @@ describe("LocalFetchProvider", () => {
         { status: 302, headers: { location: "http://127.0.0.1:8080/" } },
       ]);
 
-      await expect(fetch.fetch({ url: "https://example.com/start", raw: false })).rejects.toThrow(
+      await expect(fetch.fetch({ url: "https://example.com/start" })).rejects.toThrow(
         /private\/loopback/,
       );
       expect(calls).toHaveLength(1);
@@ -192,7 +199,7 @@ describe("LocalFetchProvider", () => {
         { status: 302, headers: { location: "http://169.254.169.254/latest/meta-data" } },
       ]);
 
-      await expect(fetch.fetch({ url: "https://example.com/start", raw: false })).rejects.toThrow(
+      await expect(fetch.fetch({ url: "https://example.com/start" })).rejects.toThrow(
         /private\/loopback/,
       );
     });
@@ -200,7 +207,7 @@ describe("LocalFetchProvider", () => {
     it("fails on a redirect without a Location", async () => {
       const { fetch } = provider([{ status: 302 }]);
 
-      await expect(fetch.fetch({ url: "https://example.com/x", raw: false })).rejects.toThrow(
+      await expect(fetch.fetch({ url: "https://example.com/x" })).rejects.toThrow(
         /redirect without Location/,
       );
     });
@@ -211,7 +218,7 @@ describe("LocalFetchProvider", () => {
         headers: { location: "https://example.com/loop" },
       }));
 
-      await expect(fetch.fetch({ url: "https://example.com/loop", raw: false })).rejects.toThrow(
+      await expect(fetch.fetch({ url: "https://example.com/loop" })).rejects.toThrow(
         /too many redirects/,
       );
       expect(calls).toHaveLength(6);
@@ -223,7 +230,7 @@ describe("LocalFetchProvider", () => {
       const { fetch } = provider([{ status: 404, body: "<html>gone</html>" }]);
 
       const error = await fetch
-        .fetch({ url: "https://example.com/missing", raw: false })
+        .fetch({ url: "https://example.com/missing" })
         .catch((caught: unknown) => caught);
 
       expect(error).toBeInstanceOf(WebSearchError);
@@ -240,7 +247,7 @@ describe("LocalFetchProvider", () => {
 
       await new LocalFetchProvider({ transport }).fetch({
         url: "https://example.com/",
-        raw: false,
+        
       });
 
       const init = seen[0];

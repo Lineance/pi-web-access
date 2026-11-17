@@ -19,21 +19,22 @@ its own tier without ever being dropped from the chain.
 
 ### `web_fetch`
 
-| Argument | Required | Meaning                                   |
-| -------- | -------- | ----------------------------------------- |
-| `url`    | yes      | Public HTTP(S) URL                        |
-| `raw`    | no       | Return raw HTML instead of extracted text |
+| Argument | Required | Meaning            |
+| -------- | -------- | ------------------ |
+| `url`    | yes      | Public HTTP(S) URL |
 
 Returns a text block for textual content, an image block for `image/png`,
 `image/jpeg`, `image/gif` and `image/webp`, and a content-type error for anything
-else. `raw = true` restricts the chain to the local provider, because remote
-reader services cannot hand back original markup.
+else. What textual HTML becomes — GFM markdown or the untouched body — is decided
+by the fetch provider chain, not by the call.
 
 ## Providers
 
 | Provider    | Search | Fetch | Key                                        |
 | ----------- | ------ | ----- | ------------------------------------------ |
-| `local`     | —      | yes   | none                                       |
+| `local`     | —      | yes   | none (HTML → GFM markdown, in-process)     |
+| `pandoc`    | —      | yes   | none (`pandoc` on PATH; fidelity upgrade)  |
+| `raw`       | —      | yes   | none (body handed back untouched)          |
 | `exa-free`  | yes    | —     | none (Exa hosted MCP, rate limited per IP) |
 | `bing`      | yes    | —     | none (HTML results)                        |
 | `searxng`   | yes    | —     | none (`SEARXNG_URL`)                       |
@@ -45,6 +46,21 @@ reader services cannot hand back original markup.
 | `firecrawl` | yes    | —     | `FIRECRAWL_API_KEY`                        |
 
 Defaults with no configuration at all: search uses `exa-free`, fetch uses `local`.
+
+The three keyless fetch providers read the URL themselves — no third party sees
+it — and differ only in what HTML becomes:
+
+- `local` renders markdown in-process (DOM parse, GFM tables, headings, links
+  resolved against the final URL). Always available; the floor of every chain.
+- `pandoc` converts with the `pandoc` binary for fidelity the in-process
+  converter cannot reach, complex tables especially. The binary must already be
+  on PATH — this package never downloads or installs one — and a missing or
+  failing binary is an ordinary provider failure the chain falls back from.
+- `raw` hands back the body exactly as the server sent it. It replaces the old
+  `raw` flag on the tool: original markup is a chain decision now.
+
+A chain that prefers fidelity and keeps raw markup reachable looks like
+`"fetchProviders": ["pandoc", "local", "raw"]`.
 
 ## Configuration
 
@@ -61,8 +77,9 @@ One JSON file. `$PI_PKG_CFG_DIR` wins if set; otherwise
   // Search chain, in preference order. Grouped by tier internally.
   "searchProviders": ["tavily", "exa", "firecrawl", "exa-free", "bing"],
 
-  // Fetch chain, in preference order.
-  "fetchProviders": ["local"],
+  // Fetch chain, in preference order. Default: ["local"]. "pandoc" needs the
+  // binary on PATH and falls back when it is missing; "raw" skips conversion.
+  "fetchProviders": ["pandoc", "local", "raw"],
 
   "apiKeys": {
     "tavily": "tvly-...",
