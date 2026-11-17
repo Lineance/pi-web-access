@@ -107,6 +107,20 @@ function contentRoot(document: DominoDocument): DominoElement {
   return document.body;
 }
 
+/**
+ * Resolve relative link and image targets in an HTML body, and return the HTML.
+ *
+ * Exported for the pandoc provider: it hands the HTML to the binary instead of
+ * converting here, so the resolution must happen before the hand-off or the
+ * markdown comes back full of half links a model cannot follow.
+ */
+export function resolveLinks(html: string, baseUrl: string): string {
+  const document = createDocument(html);
+  const root = document.body;
+  absolutizeUrls(root, baseUrl);
+  return root.innerHTML;
+}
+
 /** Resolve relative link and image targets so the markdown stands alone. */
 function absolutizeUrls(root: DominoElement, baseUrl: string): void {
   let base: URL;

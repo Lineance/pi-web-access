@@ -1,4 +1,5 @@
 import { readFetchedContent } from "../read.js";
+import { resolveLinks } from "../local/markup.js";
 import {
   convertHtmlToMarkdown,
   pandocAvailable,
@@ -47,7 +48,7 @@ export class PandocFetchProvider implements FetchProvider {
       transport: this.transport,
       url: request.url,
       signal,
-      render: (html) => convertHtmlToMarkdown(html, this.spawnPandoc, signal),
+      render: (html, finalUrl) => convertHtmlToMarkdown(resolveLinks(html, finalUrl), this.spawnPandoc, signal),
     });
   }
 }

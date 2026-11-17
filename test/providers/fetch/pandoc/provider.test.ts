@@ -76,9 +76,8 @@ describe("PandocFetchProvider", () => {
     const content = await pending;
     expect(content.kind === "text" && content.text).toBe("rendered markdown");
     expect(content.kind === "text" && content.title).toBe("Doc");
-    expect(converter?.stdin.writes).toEqual([
-      "<html><head><title>Doc</title></head><body><p>body</p></body></html>",
-    ]);
+    // The HTML handed to pandoc has its relative targets resolved first.
+    expect(converter?.stdin.writes).toEqual(["<p>body</p>"]);
   });
 
   it("throws a factual error without contacting the URL when the binary is missing", async () => {

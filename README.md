@@ -129,7 +129,7 @@ A search entry describes a JSON API; a fetch entry points at a remote reader.
       "url": "https://reader.example.com/{url}",
       "auth": { "header": "x-api-key", "prefix": "" },
       "keyEnv": "MY_READER_KEY",
-      "fetch": { "textPath": "data.markdown", "titlePath": "data.title" },
+      "fetch": { "textPath": "data.markdown", "titlePath": "data.metadata.title" },
       "tier": 2
     }
   }
@@ -137,7 +137,42 @@ A search entry describes a JSON API; a fetch entry points at a remote reader.
 ```
 
 Placeholders: `{query}`, `{queryEncoded}` (for a path segment), `{maxResults}`,
-`{url}` (percent-encoded), `{baseUrl}` (taken from `baseUrls`).
+`{url}` (percent-encoded), `{urlRaw}` (for a JSON body field, where encoding
+would corrupt the target), `{baseUrl}` (taken from `baseUrls`).
+
+A worked reader, verified live: Firecrawl is reachable from most networks,
+answers without a key on a per-IP daily tier, and after a free signup carries
+1,000 credits a month on `FIRECRAWL_API_KEY`. Two entries cover both states:
+
+```jsonc
+"customProviders": {
+  "fetch": {
+    "firecrawl-reader": {
+      "label": "Firecrawl (keyless)",
+      "url": "https://api.firecrawl.dev/v2/scrape",
+      "method": "POST",
+      "body": { "url": "{urlRaw}", "formats": ["markdown"] },
+      "fetch": { "textPath": "data.markdown", "titlePath": "data.metadata.title" },
+      "tier": 2
+    },
+    "firecrawl-keyed": {
+      "label": "Firecrawl (1000 credits/mo free)",
+      "url": "https://api.firecrawl.dev/v2/scrape",
+      "method": "POST",
+      "auth": { "header": "authorization", "prefix": "Bearer " },
+      "keyEnv": "FIRECRAWL_API_KEY",
+      "body": { "url": "{urlRaw}", "formats": ["markdown"] },
+      "fetch": { "textPath": "data.markdown", "titlePath": "data.metadata.title" },
+      "tier": 2
+    }
+  }
+}
+```
+
+Put both in `fetchProviders` (e.g. `["pandoc", "local", "firecrawl-reader",
+"firecrawl-keyed", "raw"]`): the keyless entry serves until the IP cap, and the
+keyed entry goes unused until `FIRECRAWL_API_KEY` exists in the environment, at
+which point it takes the registered quota.
 
 Rules, all enforced by name so one bad entry does not take the file down:
 

@@ -4,6 +4,7 @@ import {
   decodeEntities,
   extractDocument,
   extractTitle,
+  resolveLinks,
 } from "../../../../src/providers/fetch/local/markup.js";
 
 describe("extractDocument", () => {
@@ -119,5 +120,22 @@ describe("decodeEntities", () => {
 
   it("refuses lone surrogates", () => {
     expect(decodeEntities("&#xD800;")).toBe("&#xD800;");
+  });
+});
+
+describe("resolveLinks", () => {
+  it("returns HTML with relative targets resolved, for the pandoc hand-off", () => {
+    const html =
+      '<p><a href="docs.md">docs</a> <a href="#top">top</a> <img src="/i.png" alt="pic"></p>';
+
+    expect(resolveLinks(html, "https://example.com/a/b/c.html")).toBe(
+      '<p><a href="https://example.com/a/b/docs.md">docs</a> <a href="#top">top</a> <img src="https://example.com/i.png" alt="pic"></p>',
+    );
+  });
+
+  it("leaves markup alone when the base URL is unusable", () => {
+    const html = '<p><a href="docs.md">docs</a></p>';
+
+    expect(resolveLinks(html, "not a url")).toBe('<p><a href="docs.md">docs</a></p>');
   });
 });

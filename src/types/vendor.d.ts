@@ -11,6 +11,7 @@ declare module "@mixmark-io/domino" {
   export interface DominoElement {
     readonly tagName: string;
     readonly textContent: string;
+    readonly innerHTML: string;
     getAttribute(name: string): string | null;
     setAttribute(name: string, value: string): void;
     remove(): void;

@@ -5,8 +5,8 @@ export interface SubstitutionValues {
   baseUrl?: string;
 }
 
-const WHOLE_TOKEN = /^\{(query|queryEncoded|maxResults|url|baseUrl)\}$/;
-const EMBEDDED_TOKEN = /\{(query|queryEncoded|maxResults|url|baseUrl)\}/g;
+const WHOLE_TOKEN = /^\{(query|queryEncoded|maxResults|url|urlRaw|baseUrl)\}$/;
+const EMBEDDED_TOKEN = /\{(query|queryEncoded|maxResults|url|urlRaw|baseUrl)\}/g;
 
 /**
  * Replace placeholders inside a value.
@@ -59,6 +59,11 @@ function renderToken(token: string, values: SubstitutionValues): string | undefi
   }
   if (token === "url") {
     return values.url === undefined ? undefined : encodeURIComponent(values.url);
+  }
+  if (token === "urlRaw") {
+    // For JSON request bodies: a body field carries the URL as data, not as part
+    // of the request syntax, so percent-encoding it would corrupt the target.
+    return values.url;
   }
   if (token === "baseUrl") {
     return values.baseUrl === undefined ? undefined : values.baseUrl.replace(/\/+$/, "");
