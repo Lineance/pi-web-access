@@ -29,7 +29,7 @@ export class CustomFetchProvider implements FetchProvider {
 
   async fetch(request: FetchRequest, signal?: AbortSignal): Promise<FetchedContent> {
     const response = await this.transport(
-      this.spec.url(request.url),
+      this.spec.url(request.url, this.apiKey),
       this.init(request.url, signal),
     );
 

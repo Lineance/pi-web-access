@@ -35,6 +35,14 @@ by the fetch provider chain, not by the call.
 | `local`     | —      | yes   | none (HTML → GFM markdown, in-process)     |
 | `pandoc`    | —      | yes   | none (`pandoc` on PATH; fidelity upgrade)  |
 | `raw`       | —      | yes   | none (body handed back untouched)          |
+| `firecrawl` | —      | yes   | optional `FIRECRAWL_API_KEY`; keyless tier per IP, 1,000 credits/month after signup |
+| `jina`      | yes    | yes   | optional `JINA_API_KEY`; keyless 20 RPM/IP, free key 10M tokens |
+| `scrapfly`  | —      | yes   | `SCRAPFLY_API_KEY` (1,000 credits one-time) |
+| `tavily`    | yes    | yes   | `TAVILY_API_KEY`; fetch side is Extract, 1,000 credits/month |
+| `scrapingant` | —    | yes   | `SCRAPINGANT_API_KEY` (10,000 credits/month) |
+| `scrapingbee` | —    | yes   | `SCRAPINGBEE_API_KEY` (1,000 credits one-time) |
+| `scraperapi` | —     | yes   | `SCRAPERAPI_API_KEY` (5,000 credits, 7-day trial) |
+| `zenrows`   | —      | yes   | `ZENROWS_API_KEY` (5,000 credits/month)    |
 | `exa-free`  | yes    | —     | none (Exa hosted MCP, rate limited per IP) |
 | `bing`      | yes    | —     | none (HTML results)                        |
 | `searxng`   | yes    | —     | none (`SEARXNG_URL`)                       |
@@ -61,6 +69,14 @@ it — and differ only in what HTML becomes:
 
 A chain that prefers fidelity and keeps raw markup reachable looks like
 `"fetchProviders": ["pandoc", "local", "raw"]`.
+
+The remote readers come prewired — endpoint, auth header or query-parameter key,
+and the response path that carries the markdown — so adding one to the chain is
+a one-word edit. Firecrawl and Jina serve a keyless tier: they work with no
+`FIRECRAWL_API_KEY` / `JINA_API_KEY` at all, and setting one raises the limits
+(their keys are *optional*; every other reader needs its key). Reachability is
+yours to judge — some networks block some of these hosts, and a reader that
+cannot be reached fails like any other provider while the chain moves on.
 
 ## Configuration
 
@@ -138,7 +154,8 @@ A search entry describes a JSON API; a fetch entry points at a remote reader.
 
 Placeholders: `{query}`, `{queryEncoded}` (for a path segment), `{maxResults}`,
 `{url}` (percent-encoded), `{urlRaw}` (for a JSON body field, where encoding
-would corrupt the target), `{baseUrl}` (taken from `baseUrls`).
+would corrupt the target), `{apiKey}` (for vendors that take the key as a query
+parameter; a missing key empties the slot), `{baseUrl}` (taken from `baseUrls`).
 
 A worked reader, verified live: Firecrawl is reachable from most networks,
 answers without a key on a per-IP daily tier, and after a free signup carries
@@ -176,7 +193,10 @@ which point it takes the registered quota.
 
 Rules, all enforced by name so one bad entry does not take the file down:
 
-- a name may not shadow a built-in provider, and may not appear on both sides
+- a name may not shadow a built-in provider on either capability — the fetch
+  side ships `firecrawl`, `jina`, `tavily`, `scrapfly`, `scrapingant`,
+  `scrapingbee`, `scraperapi` and `zenrows` as built-ins, so those names are
+  taken there too
 - `auth` requires `keyEnv`; a custom provider reads the environment only, never
   `apiKeys`, so a key in this file can never be sent to an endpoint that did not
   ask for it

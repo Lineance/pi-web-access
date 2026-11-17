@@ -24,6 +24,9 @@ function report(overrides: Partial<ReportInput> = {}) {
 const row = (snapshot: ReturnType<typeof report>, name: string) =>
   snapshot.providers.find((provider) => provider.name === name);
 
+const fetchRow = (snapshot: ReturnType<typeof report>, name: string) =>
+  snapshot.providers.find((provider) => provider.name === name && provider.side === "fetch");
+
 describe("describeStatus", () => {
   it("reports the default chains", () => {
     const snapshot = report();
@@ -47,6 +50,22 @@ describe("describeStatus", () => {
   it("marks a keyless provider as usable", () => {
     expect(row(report(), "exa-free")?.key).toEqual({ state: "keyless" });
     expect(row(report(), "local")?.key).toEqual({ state: "keyless" });
+  });
+
+  it("treats an optional key as keyless while it is missing", () => {
+    const snapshot = report({ config: { fetchProviders: ["firecrawl", "jina"] } });
+
+    expect(fetchRow(snapshot, "firecrawl")?.key).toEqual({ state: "keyless" });
+    expect(fetchRow(snapshot, "jina")?.key).toEqual({ state: "keyless" });
+
+    const withKey = report({
+      config: { fetchProviders: ["firecrawl"] },
+      env: { FIRECRAWL_API_KEY: "x" },
+    });
+    expect(fetchRow(withKey, "firecrawl")?.key).toEqual({
+      state: "env",
+      variable: "FIRECRAWL_API_KEY",
+    });
   });
 
   it("reports a key supplied through the environment", () => {

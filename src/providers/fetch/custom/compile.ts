@@ -50,7 +50,7 @@ export function compileFetchProvider(name: string, raw: unknown): FetchCompileRe
   const spec: FetchProviderSpec = {
     name,
     label,
-    url: (url) => String(substituteString(source.url, { url })),
+    url: (url, apiKey) => String(substituteString(source.url, { url, apiKey })),
     method,
     ...(source.headers === undefined ? {} : { headers: source.headers }),
     ...(source.auth === undefined

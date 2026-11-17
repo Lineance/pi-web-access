@@ -152,7 +152,7 @@ function orderedNames(chain: readonly string[], known: readonly string[]): strin
 
 function keyState(
   name: string,
-  meta: { envVar?: string; envOnly?: boolean },
+  meta: { envVar?: string; envOnly?: boolean; optionalKey?: boolean },
   config: WebConfig,
   env: Readonly<Record<string, string | undefined>>,
 ): KeyState {
@@ -160,6 +160,10 @@ function keyState(
 
   const value = env[meta.envVar]?.trim();
   if (value !== undefined && value !== "") return { state: "env", variable: meta.envVar };
+
+  // A keyless tier serves the optional-key vendors (Firecrawl, Jina): a missing
+  // key costs registered quota, never usability.
+  if (meta.optionalKey === true) return { state: "keyless" };
 
   // A custom provider reads the environment only; a file entry would be ignored, so
   // reporting "missing" rather than falling through to the config is the honest answer.

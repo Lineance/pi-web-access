@@ -2,11 +2,13 @@ export interface SubstitutionValues {
   query?: string;
   maxResults?: number;
   url?: string;
+  /** The provider's API key, for vendors that take it as a query parameter. */
+  apiKey?: string;
   baseUrl?: string;
 }
 
-const WHOLE_TOKEN = /^\{(query|queryEncoded|maxResults|url|urlRaw|baseUrl)\}$/;
-const EMBEDDED_TOKEN = /\{(query|queryEncoded|maxResults|url|urlRaw|baseUrl)\}/g;
+const WHOLE_TOKEN = /^\{(query|queryEncoded|maxResults|url|urlRaw|apiKey|baseUrl)\}$/;
+const EMBEDDED_TOKEN = /\{(query|queryEncoded|maxResults|url|urlRaw|apiKey|baseUrl)\}/g;
 
 /**
  * Replace placeholders inside a value.
@@ -59,6 +61,12 @@ function renderToken(token: string, values: SubstitutionValues): string | undefi
   }
   if (token === "url") {
     return values.url === undefined ? undefined : encodeURIComponent(values.url);
+  }
+  if (token === "apiKey") {
+    // Query-parameter keys ride in the URL, so they encode like any other value.
+    // An absent key empties the slot: the vendor answers 401 and the chain moves
+    // on, instead of a literal placeholder shipping to the network.
+    return encodeURIComponent(values.apiKey ?? "");
   }
   if (token === "urlRaw") {
     // For JSON request bodies: a body field carries the URL as data, not as part

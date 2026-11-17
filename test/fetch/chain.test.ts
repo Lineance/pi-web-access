@@ -41,6 +41,12 @@ describe("buildFetchChain", () => {
     ]);
   });
 
+  it("resolves the built-in remote readers on the fetch side", () => {
+    expect(
+      buildFetchChain({ fetchProviders: ["firecrawl", "jina", "tavily", "zenrows"] }),
+    ).toEqual(["firecrawl", "jina", "tavily", "zenrows"]);
+  });
+
   it("refuses an unknown fetch provider", () => {
     const error = captureChainError(() =>
       buildFetchChain({ fetchProviders: ["nope"] }),

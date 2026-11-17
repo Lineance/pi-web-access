@@ -86,3 +86,15 @@ describe("substitute", () => {
     expect(JSON.parse(JSON.stringify(result))).toEqual({ q: '"},"evil":"1' });
   });
 });
+
+describe("apiKey placeholder", () => {
+  it("percent-encodes the key into a query slot", () => {
+    expect(substituteString("https://api/?apikey={apiKey}", { apiKey: "k/1&a" })).toBe(
+      "https://api/?apikey=k%2F1%26a",
+    );
+  });
+
+  it("empties the slot when no key resolved", () => {
+    expect(substituteString("https://api/?apikey={apiKey}", {})).toBe("https://api/?apikey=");
+  });
+});

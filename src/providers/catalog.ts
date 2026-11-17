@@ -1,4 +1,5 @@
 import type { FetchProviderMeta, FetchProviderSpec } from "./fetch/types.js";
+import { BUILTIN_FETCH_SPECS } from "./fetch/specs.js";
 import { fetchProviderNames, findFetchMeta } from "./fetch/registry.js";
 import type { SearchProviderMeta, SearchProviderSpec } from "./search/types.js";
 import { findSearchMeta, searchProviderNames } from "./search/registry.js";
@@ -44,7 +45,7 @@ export const BUILTIN_CATALOG: ProviderCatalog = {
   searchMeta: (name) => findSearchMeta(name),
   searchSpec: (name) => JSON_PROVIDER_SPECS[name],
   fetchMeta: (name) => findFetchMeta(name),
-  fetchSpec: () => undefined,
+  fetchSpec: (name) => BUILTIN_FETCH_SPECS[name],
   searchNames: () => searchProviderNames(),
   fetchNames: () => fetchProviderNames(),
 };

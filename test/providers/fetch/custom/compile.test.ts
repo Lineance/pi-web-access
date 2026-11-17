@@ -21,7 +21,7 @@ describe("compileFetchProvider", () => {
       keyless: true,
       tier: 2,
     });
-    expect(result.spec.url("https://a.com/x")).toBe(
+    expect(result.spec.url("https://a.com/x", "")).toBe(
       "https://reader.example.com/https%3A%2F%2Fa.com%2Fx",
     );
     expect(result.spec.textPath).toBe("data.markdown");
